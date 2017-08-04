@@ -1,10 +1,10 @@
-#!/usr/bin/env python2.6
-'''
+#!/usr/bin/env python3.6
+"""
 Open and modify Microsoft Word 2007 docx files (called 'OpenXML' and 'Office OpenXML' by Microsoft)
 
 Part of Python's docx module - http://github.com/mikemaccana/python-docx
 See LICENSE for licensing information.
-'''
+"""
 
 from lxml import etree
 from PIL import Image
@@ -89,6 +89,7 @@ stylenames = {
     'ListNumber': 'ListNumber',
 }
 
+
 def norm_name(name, namespaces):
     ns, name = name.split(':', 1)
     ns = namespaces[ns]
@@ -120,19 +121,43 @@ set_template(temp_dir)
 
 
 def opendocx(file):
-    '''Open a docx file, return a document XML tree'''
+    """
+    Open a docx file, return a document XML tree
+    .. todo:: add doc
+    :param file:
+    :return:
+    """
     mydoc = zipfile.ZipFile(file)
     xmlcontent = mydoc.read('word/document.xml').encode()
     document = etree.fromstring(xmlcontent)
     return document
 
+
 def newdocument():
+    """
+    .. todo:: add doc
+    :return:
+    """
     document = makeelement('document')
     document.append(makeelement('body'))
     return document
 
-def makeelement(tagname,tagtext=None,nsprefix='w',attributes=None,attrnsprefix=None):
-    '''Create an element & return it''' 
+
+def makeelement(tagname,
+                tagtext=None,
+                nsprefix='w',
+                attributes=None,
+                attrnsprefix=None):
+    """
+    Create an element & return it
+    .. todo:: add doc
+    :param tagname:
+    :param tagtext:
+    :param nsprefix:
+    :param attributes:
+    :param attrnsprefix:
+    :return:
+    """
     # Deal with list of nsprefix by making namespacemap
     namespacemap = None
     if type(nsprefix) == list:
@@ -165,10 +190,12 @@ def makeelement(tagname,tagtext=None,nsprefix='w',attributes=None,attrnsprefix=N
         newelement.text = tagtext    
     return newelement
 
+
 def pagebreak(type='page', orient='portrait'):
-    '''Insert a break, default 'page'.
+    """
+    Insert a break, default 'page'.
     See http://openxmldeveloper.org/forums/thread/4075.aspx
-    Return our page break element.'''
+    Return our page break element."""
     # Need to enumerate different types of page breaks.
     validtypes = ['page', 'section']
     if type not in validtypes:
@@ -191,9 +218,17 @@ def pagebreak(type='page', orient='portrait'):
         pagebreak.append(pPr)
     return pagebreak    
 
-def paragraph(paratext,style='BodyText',breakbefore=False):
-    '''Make a new paragraph element, containing a run, and some text. 
-    Return the paragraph element.'''
+
+def paragraph(paratext, style='BodyText', breakbefore=False):
+    """
+    Make a new paragraph element, containing a run, and some text.
+    Return the paragraph element.
+    .. todo:: add doc
+    :param paratext:
+    :param style:
+    :param breakbefore:
+    :return:
+    """
     # Make our elements
     paragraph = makeelement('p')
     run = makeelement('r')    
@@ -216,7 +251,12 @@ def paragraph(paratext,style='BodyText',breakbefore=False):
     # Return the combined paragraph
     return paragraph
 
+
 def contenttypes():
+    """
+    .. todo:: add doc
+    :return:
+    """
     prev_dir = os.getcwd() # save previous working dir
     os.chdir(template_dir)
 
@@ -243,8 +283,15 @@ def contenttypes():
     os.chdir(prev_dir)
     return types
 
-def heading(headingtext,headinglevel):
-    '''Make a new heading, return the heading element'''
+
+def heading(headingtext, headinglevel):
+    """
+    Make a new heading, return the heading element
+    .. todo:: add doc
+    :param headingtext:
+    :param headinglevel:
+    :return:
+    """
     # Make our elements
     paragraph = makeelement('p')
     pr = makeelement('pPr')
@@ -260,8 +307,13 @@ def heading(headingtext,headinglevel):
     # Return the combined paragraph
     return paragraph   
 
+
 def table(contents):
-    '''Get a list of lists, return a table'''
+    """Get a list of lists, return a table
+    .. todo:: add doc
+    :param contents:
+    :return:
+    """
     table = makeelement('tbl')
     columns = len(contents[0][0])    
     # Table properties
@@ -312,10 +364,26 @@ def table(contents):
         table.append(row)   
     return table                 
 
-def picture(relationshiplist, picname, picdescription, pixelwidth=None,
-            pixelheight=None, nochangeaspect=True, nochangearrowheads=True):
-    '''Take a relationshiplist, picture file name, and return a paragraph containing the image
-    and an updated relationshiplist'''
+
+def picture(relationshiplist,
+            picname,
+            picdescription,
+            pixelwidth=None,
+            pixelheight=None,
+            nochangeaspect=True,
+            nochangearrowheads=True):
+    """
+    Take a relationshiplist, picture file name, and return a paragraph
+     containing the image and an updated relationshiplist
+    .. todo:: add doc
+    :param relationshiplist:
+    :param picname:
+    :param picdescription:
+    :param pixelwidth:
+    :param pixelheight:
+    :param nochangeaspect:
+    :param nochangearrowheads:
+    :return: """
     # http://openxmldeveloper.org/articles/462.aspx
     # Create an image. Size may be specified, otherwise it will based on the
     # pixel size of image. Return a paragraph containing the picture'''  
@@ -412,10 +480,16 @@ def picture(relationshiplist, picname, picdescription, pixelwidth=None,
     return relationshiplist,paragraph
 
 
-def search(document,search):
-    '''Search a document for a regex, return success / fail result'''
+def search(document, _search):
+    """
+    Search a document for a regex, return success / fail result
+    .. todo:: add doc
+    :param document: 
+    :param _search: 
+    :return: 
+    """
     result = False
-    searchre = re.compile(search)
+    searchre = re.compile(_search)
     for element in document.iter():
         if element.tag == '{%s}t' % nsprefixes['w']: # t (text) elements
             if element.text:
@@ -423,8 +497,16 @@ def search(document,search):
                     result = True
     return result
 
-def replace(document,search,replace):
-    '''Replace all occurences of string with a different string, return updated document'''
+
+def replace(document, search, replace):
+    """
+    Replace all occurences of string with a different string, return updated document
+    .. todo:: add doc
+    :param document:
+    :param search:
+    :param replace:
+    :return:
+    """
     newdocument = document
     searchre = re.compile(search)
     for element in newdocument.iter():
@@ -436,7 +518,12 @@ def replace(document,search,replace):
 
 
 def getdocumenttext(document):
-    '''Return the raw text of a document, as a list of paragraphs.'''
+    """
+    Return the raw text of a document, as a list of paragraphs.
+    .. todo:: add doc
+    :param document:
+    :return:
+    """
     paratextlist=[]   
     # Compile a list of all paragraph (p) elements
     paralist = []
@@ -459,9 +546,18 @@ def getdocumenttext(document):
             paratextlist.append(paratext)                    
     return paratextlist        
 
-def coreproperties(title,subject,creator,keywords,lastmodifiedby=None):
-    '''Create core properties (common document properties referred to in the 'Dublin Core' specification).
-    See appproperties() for other stuff.'''
+
+def coreproperties(title, subject, creator, keywords, lastmodifiedby=None):
+    """Create core properties (common document properties referred to in the
+     'Dublin Core' specification). See appproperties() for other stuff.
+    .. todo:: add doc
+    :param title:
+    :param subject:
+    :param creator:
+    :param keywords:
+    :param lastmodifiedby:
+    :return:
+    """
     coreprops = makeelement('coreProperties',nsprefix='cp')    
     coreprops.append(makeelement('title',tagtext=title,nsprefix='dc'))
     coreprops.append(makeelement('subject',tagtext=subject,nsprefix='dc'))
@@ -483,8 +579,14 @@ def coreproperties(title,subject,creator,keywords,lastmodifiedby=None):
         pass
     return coreprops
 
+
 def appproperties():
-    '''Create app-specific properties. See docproperties() for more common document properties.'''    
+    """
+    Create app-specific properties. See docproperties() for more common document
+    properties.
+    .. todo:: add doc
+    :return:
+    """
     appprops = makeelement('Properties',nsprefix='ep')
     appprops = etree.fromstring(
     '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -512,13 +614,21 @@ def appproperties():
 
 
 def websettings():
-    '''Generate websettings'''
+    """
+    Generate websettings
+    .. todo:: add doc
+    """
     web = makeelement('webSettings')
     web.append(makeelement('allowPNG'))
     web.append(makeelement('doNotSaveAsSingleFile'))
     return web
 
+
 def relationshiplist():
+    """
+    .. todo:: add doc
+    :return: .. todo:: add doc
+    """
     prev_dir = os.getcwd() # save previous working dir
     os.chdir(template_dir)
 
@@ -535,8 +645,14 @@ def relationshiplist():
     os.chdir(prev_dir)
     return relationshiplist
 
+
 def wordrelationships(relationshiplist):
-    '''Generate a Word relationships file'''
+    """
+    Generate a Word relationships file
+    .. todo:: add doc
+    :param relationshiplist:
+    :return:
+    """
     # Default list of relationships
     # FIXME: using string hack instead of making element
     #relationships = makeelement('Relationships',nsprefix='pr')    
@@ -552,8 +668,28 @@ def wordrelationships(relationshiplist):
         count += 1
     return relationships    
 
-def savedocx(document,coreprops,appprops,contenttypes,websettings,wordrelationships,docxfilename):
-    '''Save a modified document'''
+
+def savedocx(document,
+             coreprops,
+             appprops,
+             contenttypes,
+             websettings,
+             wordrelationships,
+             docxfilename):
+    """
+    Save a modified document
+
+    .. todo:: add doc
+
+    :param document:
+    :param coreprops:
+    :param appprops:
+    :param contenttypes:
+    :param websettings:
+    :param wordrelationships:
+    :param docxfilename:
+    :return:
+    """
     assert os.path.isdir(template_dir)
     docxfile = zipfile.ZipFile(docxfilename,mode='w',compression=zipfile.ZIP_DEFLATED)
     
