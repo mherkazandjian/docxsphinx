@@ -6,7 +6,7 @@ BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 version = '0.0.1'
 long_description = \
-        open(os.path.join(BASEDIR, "src", "README.txt")).read() + \
+        open(os.path.join(BASEDIR, "src", "README.md")).read() + \
         open(os.path.join(BASEDIR, "src", "TODO.txt")).read()
 
 classifiers = [
