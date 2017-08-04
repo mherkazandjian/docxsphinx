@@ -1,2 +1,0 @@
-see src/README.txt
-

@@ -1,8 +1,0 @@
-Sphinx
-lxml
-pillow
-
-[test]
-Nose
-minimock
-pep8

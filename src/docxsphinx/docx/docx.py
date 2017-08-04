@@ -7,7 +7,7 @@ See LICENSE for licensing information.
 '''
 
 from lxml import etree
-import Image
+from PIL import Image
 import zipfile
 import shutil
 import re
@@ -17,9 +17,9 @@ from os.path import join
 
 # Record template directory's location which is just 'template' for a docx
 # developer or 'site-packages/docx-template' if you have installed docx
-TEMPLATE_DIR = join(os.path.dirname(__file__),'docx-template') # installed
+TEMPLATE_DIR = join(os.path.dirname(__file__), 'docx-template')  # installed
 if not os.path.isdir(TEMPLATE_DIR):
-    TEMPLATE_DIR = join(os.path.dirname(__file__),'template') # dev
+    TEMPLATE_DIR = join(os.path.dirname(__file__), 'template')  # dev
 
 # FIXME: QUICK-HACK to prevent picture() from staining template directory.
 # temporary directory will create per module import.
@@ -96,7 +96,7 @@ def norm_name(name, namespaces):
 
 
 def update_stylenames(style_file):
-    xmlcontent = open(style_file, 'r').read()
+    xmlcontent = open(style_file).read().encode()
     xml = etree.fromstring(xmlcontent)
     style_elems = xml.xpath('w:style', namespaces=nsprefixes)
     for style_elem in style_elems:
@@ -108,7 +108,7 @@ def update_stylenames(style_file):
             name = name_elem.attrib[norm_name('w:val', nsprefixes)]
         value = style_elem.attrib[norm_name('w:styleId', nsprefixes)]
         stylenames[name] = value
-        print "### '%s' = '%s'" % (name, value)
+        print("### '%s' = '%s'" % (name, value))
 
 
 import tempfile
@@ -122,8 +122,8 @@ set_template(temp_dir)
 def opendocx(file):
     '''Open a docx file, return a document XML tree'''
     mydoc = zipfile.ZipFile(file)
-    xmlcontent = mydoc.read('word/document.xml')
-    document = etree.fromstring(xmlcontent)    
+    xmlcontent = mydoc.read('word/document.xml').encode()
+    document = etree.fromstring(xmlcontent)
     return document
 
 def newdocument():
@@ -226,7 +226,7 @@ def contenttypes():
 
     parts = dict([
         (x.attrib['PartName'], x.attrib['ContentType'])
-        for x in etree.fromstring(open(filename).read()).xpath('*')
+        for x in etree.fromstring(open(filename).read().encode()).xpath('*')
         if 'PartName' in x.attrib
     ])
 
@@ -329,7 +329,7 @@ def picture(relationshiplist, picname, picdescription, pixelwidth=None,
     # Check if the user has specified a size
     if not pixelwidth or not pixelheight:
         # If not, get info from the picture itself
-        pixelwidth,pixelheight = Image.open(picpath).size[0:2]
+        pixelwidth, pixelheight = Image.open(picpath).size[0:2]
 
     # OpenXML measures on-screen objects in English Metric Units
     # 1cm = 36000 EMUs            
@@ -488,7 +488,7 @@ def appproperties():
     appprops = makeelement('Properties',nsprefix='ep')
     appprops = etree.fromstring(
     '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"></Properties>''')
+    <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"></Properties>'''.encode())
     props = {
             'Template':'Normal.dotm',
             'TotalTime':'6',
@@ -526,7 +526,7 @@ def relationshiplist():
     if not os.path.exists(filename):
         raise RuntimeError('You need %r file in template' % filename)
 
-    relationships = etree.fromstring(open(filename).read())
+    relationships = etree.fromstring(open(filename).read().encode())
     relationshiplist = [
             [x.attrib['Type'], x.attrib['Target']]
             for x in relationships.xpath('*')
@@ -569,10 +569,10 @@ def savedocx(document,coreprops,appprops,contenttypes,websettings,wordrelationsh
                      websettings:'word/webSettings.xml',
                      wordrelationships:'word/_rels/document.xml.rels'}
     for tree in treesandfiles:
-        print 'Saving: '+treesandfiles[tree]    
+        print('Saving: '+treesandfiles[tree])
         treestring = etree.tostring(tree, pretty_print=True)
         docxfile.writestr(treesandfiles[tree],treestring)
-    
+
     # Add & compress support files
     files_to_ignore = ['.DS_Store'] # nuisance from some os's
     files_to_skip = treesandfiles.values()
@@ -585,10 +585,8 @@ def savedocx(document,coreprops,appprops,contenttypes,websettings,wordrelationsh
             archivename = '/'.join(archivename.split(os.sep))  # multibyte ok?
             if archivename in files_to_skip:
                 continue
-            print 'Saving: '+archivename          
+            print('Saving: ' + archivename)
             docxfile.write(templatefile, archivename)
-    print 'Saved new file to: '+docxfilename
-    os.chdir(prev_dir) # restore previous working dir
+    print('Saved new file to: ' + docxfilename)
+    os.chdir(prev_dir)  # restore previous working dir
     return
-    
-
