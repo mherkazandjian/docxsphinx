@@ -315,6 +315,10 @@ def table(contents):
     :return:
     """
     table = makeelement('tbl')
+    print('WARNING'*100)
+    print('tables are temporarily disabled due to bad formatting')
+    print('END WARNING'*100)
+    return table
     columns = len(contents[0][0])    
     # Table properties
     tableprops = makeelement('tblPr')
