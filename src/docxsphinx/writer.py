@@ -560,7 +560,8 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_entry(self, node):
         dprint()
-        text = '\n'.join('\n'.join(x) for x in self.states.pop())
+        #text = '\n'.join('\n'.join(x) for x in self.states.pop())
+        text = '\n'.join(self.states.pop())
         self.table[-1].append(text)
 
     def visit_table(self, node):
