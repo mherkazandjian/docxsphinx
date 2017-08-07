@@ -683,9 +683,9 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_list_item(self, node):
         dprint()
         text = ''.join(self.states.pop())
-        #self.docbody.append(
+        # self.docbody.append(
         #        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-        self.docbody.document.add_paragraph(text, style='ListBullet')
+        self.docbody.document.add_paragraph(text, style='List Paragraph1')
 
     def visit_definition_list_item(self, node):
         dprint()
