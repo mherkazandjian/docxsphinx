@@ -7,6 +7,23 @@ This repository has been forked from
 and some heavy modification have been done. The major changes are listed in
 the release notes (`todo` add the release notes).
 
+Installation
+============
+The latest bleeding edge version can be installed through
+
+   pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
+
+Alternatively the repository can be cloned and installed locally
+
+   git clone https://github.com/mherkazandjian/docxsphinx.git
+   cd docxsphinx
+   python -m pip install -r requirements.txt
+   python setup.py install
+
+
+After installation, ```make docx``` in a sphinx project  should work
+(see next section)
+
 Generating a `docx` document
 ============================
 It is assumed that a sphinx project already is in place. At least one change
