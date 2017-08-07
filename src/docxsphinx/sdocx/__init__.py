@@ -1,2 +1,2 @@
-from docxsphinx.docx.docx import *
+from docxsphinx.sdocx.sdocx import *
 
