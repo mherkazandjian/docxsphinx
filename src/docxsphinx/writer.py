@@ -582,7 +582,23 @@ class DocxTranslator(nodes.NodeVisitor):
             else:
                 fmted_rows.append(line)
 
-        self.docbody.append(docx.table(fmted_rows))
+        nrows = len(fmted_rows)
+        ncols = len(fmted_rows[0])
+        nncols = [len(r) for r in fmted_rows]
+
+        logger.info("HB {} {}".format(nrows, nncols))
+        logger.info("HB {}".format(fmted_rows[0]))
+
+        table = self.docbody.document.add_table(rows=nrows, cols=ncols, style='Grid Table 4')
+
+        #hdr_cells = table.rows[0].cells
+        #hdr_cells[0].text = 'Qty'
+        for row in fmted_rows:
+            row_cells = table.add_row().cells
+            for i, cell in enumerate(row):
+                row_cells[i].text = cell
+
+        #self.docbody.append(docx.table(fmted_rows))
         self.table = None
         self.end_state()
 
