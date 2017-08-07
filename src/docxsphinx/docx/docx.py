@@ -13,6 +13,7 @@ import shutil
 import re
 import time
 import os
+import sys
 from os.path import join
 
 # Record template directory's location which is just 'template' for a docx
@@ -97,7 +98,10 @@ def norm_name(name, namespaces):
 
 
 def update_stylenames(style_file):
-    xmlcontent = open(style_file).read().encode()
+    if sys.version_info.major == 2:
+        xmlcontent = open(style_file).read()
+    else:
+        xmlcontent = open(style_file).read().encode()
     xml = etree.fromstring(xmlcontent)
     style_elems = xml.xpath('w:style', namespaces=nsprefixes)
     for style_elem in style_elems:
