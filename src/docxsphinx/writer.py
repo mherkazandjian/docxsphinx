@@ -65,34 +65,36 @@ class DocxWriter(writers.Writer):
 
         dc = DocxContaner()
         dc.document = docx.newdocument()
-        dc.docbody = dc.document.xpath(
-                '/w:document/w:body', namespaces=docx.nsprefixes)[0]
-        dc.relationships = docx.relationshiplist()
-        dc.appprops = docx.appproperties()
-        dc.contenttypes = docx.contenttypes()
-        dc.websettings = docx.websettings()
+        #dc.docbody = dc.document.xpath(
+        #        '/w:document/w:body', namespaces=docx.nsprefixes)[0]
+        #dc.relationships = docx.relationshiplist()
+        #dc.appprops = docx.appproperties()
+        #dc.contenttypes = docx.contenttypes()
+        #dc.websettings = docx.websettings()
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
-            dotx = os.path.join(self.builder.env.srcdir, dotx)
-            z = zipfile.ZipFile(dotx, 'r')
-            template_dir = tempfile.mkdtemp(prefix='docx-')
-            z.extractall(template_dir)
-            docx.set_template(template_dir)
+            #dotx = os.path.join(self.builder.env.srcdir, dotx)
+            #z = zipfile.ZipFile(dotx, 'r')
+            #template_dir = tempfile.mkdtemp(prefix='docx-')
+            #z.extractall(template_dir)
+            #docx.set_template(template_dir)
+            docx.set_template(dotx)
 
     def save(self, filename):
         dc = self.docx_container
-        wordrelationships = docx.wordrelationships(dc.relationships)
-        coreprops = docx.coreproperties(
-                title='Python docx demo',
-                subject='A practical example of making docx from Python',
-                creator='Mike MacCana',
-                keywords=['python', 'Office Open XML', 'Word'])
+        #wordrelationships = docx.wordrelationships(dc.relationships)
+        #coreprops = docx.coreproperties(
+        #        title='Python docx demo',
+        #        subject='A practical example of making docx from Python',
+        #        creator='Mike MacCana',
+        #        keywords=['python', 'Office Open XML', 'Word'])
 
-        docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
-                dc.websettings, wordrelationships, filename)
+        #docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
+        #        dc.websettings, wordrelationships, filename)
+        dc.document.save(filename)
 
     def translate(self):
         visitor = DocxTranslator(
@@ -106,7 +108,8 @@ class DocxTranslator(nodes.NodeVisitor):
     def __init__(self, document, builder, docx_container):
         self.builder = builder
         self.docx_container = docx_container
-        self.docbody = docx_container.docbody
+        #self.docbody = docx_container.docbody
+        self.docbody = docx_container
         nodes.NodeVisitor.__init__(self, document)
 
         self.states = [[]]
@@ -231,7 +234,8 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         text = ''.join(self.states.pop())
         dprint(_func='* heading', text=repr(text), level=self.sectionlevel)
-        self.docbody.append(docx.heading(text, self.sectionlevel))
+        #self.docbody.append(docx.heading(text, self.sectionlevel))
+        self.docbody.document.add_heading(repr(text), level=self.sectionlevel)
 
     def visit_subtitle(self, node):
         dprint()
@@ -640,8 +644,9 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_list_item(self, node):
         dprint()
         text = ''.join(self.states.pop())
-        self.docbody.append(
-                docx.paragraph(text, self.list_style[-1], breakbefore=True))
+        #self.docbody.append(
+        #        docx.paragraph(text, self.list_style[-1], breakbefore=True))
+        self.docbody.document.add_paragraph(text, style='ListBullet')
 
     def visit_definition_list_item(self, node):
         dprint()
