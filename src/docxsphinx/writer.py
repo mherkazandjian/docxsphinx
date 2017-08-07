@@ -130,8 +130,9 @@ class DocxTranslator(nodes.NodeVisitor):
         if self.states and self.states[-1]:
             result = self.states[-1]
             self.states[-1] = []
-            self.docbody.append(
-                    docx.paragraph(''.join(result), breakbefore=True))
+            #self.docbody.append(
+            #        docx.paragraph(''.join(result), breakbefore=True))
+            self.docbody.document.add_paragraph(''.join(result))
 
     def end_state(self, first=None):
         dprint()
