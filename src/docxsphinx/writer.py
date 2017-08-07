@@ -590,10 +590,8 @@ class DocxTranslator(nodes.NodeVisitor):
         logger.info("HB {} {}".format(nrows, nncols))
         logger.info("HB {}".format(fmted_rows[0]))
 
-        table = self.docbody.document.add_table(rows=nrows, cols=ncols, style='Grid Table 4')
+        table = self.docbody.document.add_table(rows=0, cols=ncols, style='Grid Table 4')
 
-        #hdr_cells = table.rows[0].cells
-        #hdr_cells[0].text = 'Qty'
         for row in fmted_rows:
             row_cells = table.add_row().cells
             for i, cell in enumerate(row):
