@@ -235,7 +235,7 @@ class DocxTranslator(nodes.NodeVisitor):
         text = ''.join(self.states.pop())
         dprint(_func='* heading', text=repr(text), level=self.sectionlevel)
         #self.docbody.append(docx.heading(text, self.sectionlevel))
-        self.docbody.document.add_heading(repr(text), level=self.sectionlevel)
+        self.docbody.document.add_heading(text, level=self.sectionlevel)
 
     def visit_subtitle(self, node):
         dprint()
