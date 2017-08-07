@@ -613,6 +613,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_image(self, node):
         dprint()
+        return
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
         dc = self.docx_container
