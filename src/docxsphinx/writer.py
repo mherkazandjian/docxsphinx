@@ -9,21 +9,20 @@
         Copyright 2010 by shimizukawa at gmail dot com (Sphinx-users.jp).
     :license: BSD, see LICENSE for details.
 """
-
+import os
+import sys
+import zipfile
+import tempfile
 import re
+
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from docutils import nodes, writers
 
 from sphinx import addnodes
 from sphinx.locale import admonitionlabels, versionlabels, _
 
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
 from docxsphinx import sdocx as docx
-import sys
-import os
-import zipfile
-import tempfile
 
 import logging
 logging.basicConfig(filename='docx.log', filemode='w', level=logging.INFO,
@@ -64,7 +63,7 @@ class DocxWriter(writers.Writer):
     def __init__(self, builder):
         writers.Writer.__init__(self)
         self.builder = builder
-        self.template_setup() # setup before call almost docx methods.
+        self.template_setup()  # setup before call almost docx methods.
 
         dc = DocxContaner()
         dc.document = docx.newdocument()
@@ -84,6 +83,7 @@ class DocxWriter(writers.Writer):
             #template_dir = tempfile.mkdtemp(prefix='docx-')
             #z.extractall(template_dir)
             #docx.set_template(template_dir)
+            logger.info("MK using template {}".format(dotx))
             docx.set_template(dotx)
 
     def save(self, filename):
@@ -94,7 +94,6 @@ class DocxWriter(writers.Writer):
         #        subject='A practical example of making docx from Python',
         #        creator='Mike MacCana',
         #        keywords=['python', 'Office Open XML', 'Word'])
-
         #docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
         #        dc.websettings, wordrelationships, filename)
         dc.document.save(filename)
@@ -1073,4 +1072,4 @@ class DocxTranslator(nodes.NodeVisitor):
     def unknown_visit(self, node):
         dprint()
         raise nodes.SkipNode
-        #raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
+        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)

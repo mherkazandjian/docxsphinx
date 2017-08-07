@@ -32,7 +32,7 @@ def set_template(template_path):
     global template_dir
 #    template_dir = template_path
 #    update_stylenames(join(template_dir, 'word', 'styles.xml'))
-    template_dir = template_path # Now contains full path to template.docx, not unzipped
+    template_dir = template_path  # Now contains full path to template.docx, not unzipped
 
 # END of QUICK-HACK
 
@@ -131,26 +131,27 @@ def update_stylenames(style_file):
 
 def opendocx(file):
     """
-    Open a docx file, return a document XML tree
-    .. todo:: add doc
-    :param file:
-    :return:
+    Open a docx file using the python-docx package
+
+    :param str file: the file name of the template
+    :return: docx.document.Document
     """
-    #mydoc = zipfile.ZipFile(file)
-    #xmlcontent = mydoc.read('word/document.xml').encode()
-    #document = etree.fromstring(xmlcontent)
-    #raise Exception, file
+    # mydoc = zipfile.ZipFile(file)
+    # xmlcontent = mydoc.read('word/document.xml').encode()
+    # document = etree.fromstring(xmlcontent)
+    # raise Exception, file
     document = docx.Document('source/' + file)
     return document
 
 
 def newdocument():
     """
-    .. todo:: add doc
-    :return:
+    create a new document based on a template (either a dir or a .docx)
+
+    :return: docx.document.Document
     """
-    #document = makeelement('document')
-    #document.append(makeelement('body'))
+    # document = makeelement('document')
+    # document.append(makeelement('body'))
     document = opendocx(template_dir)
     return document
 
