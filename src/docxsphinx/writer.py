@@ -154,7 +154,9 @@ class DocxTranslator(nodes.NodeVisitor):
         # (BTW Sphinx has heading levels per file? or entire document?)
         self.sectionlevel = 0
 
-        self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
+        # HB: I believe this is all wrong, who cares about files?
+        #self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
+        self.docbody.document.add_page_break()
 
     def depart_start_of_file(self, node):
         dprint()
