@@ -17,6 +17,8 @@ from docutils import nodes, writers
 from sphinx import addnodes
 from sphinx.locale import admonitionlabels, versionlabels, _
 
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
 from docxsphinx import sdocx as docx
 import sys
 import os
@@ -27,6 +29,7 @@ import logging
 logging.basicConfig(filename='docx.log', filemode='w', level=logging.INFO,
         format="%(asctime)-15s  %(message)s")
 logger = logging.getLogger('docx')
+
 
 
 def dprint(_func=None, **kw):
@@ -132,7 +135,7 @@ class DocxTranslator(nodes.NodeVisitor):
             self.states[-1] = []
             #self.docbody.append(
             #        docx.paragraph(''.join(result), breakbefore=True))
-            self.docbody.document.add_paragraph(''.join(result))
+            self.current_paragraph = self.docbody.document.add_paragraph(''.join(result))
 
     def end_state(self, first=None):
         dprint()
@@ -569,6 +572,7 @@ class DocxTranslator(nodes.NodeVisitor):
         if self.table:
             raise NotImplementedError('Nested tables are not supported.')
         self.new_state()
+        self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         self.table = [[]]
 
     def depart_table(self, node):
@@ -591,11 +595,15 @@ class DocxTranslator(nodes.NodeVisitor):
         logger.info("HB {}".format(fmted_rows[0]))
 
         table = self.docbody.document.add_table(rows=0, cols=ncols, style='Grid Table 4')
+        #table.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         for row in fmted_rows:
             row_cells = table.add_row().cells
             for i, cell in enumerate(row):
-                row_cells[i].text = cell
+                #row_cells[i].text = cell
+                #row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                paragraph = row_cells[i].add_paragraph(cell)
+                paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         #self.docbody.append(docx.table(fmted_rows))
         self.table = None
