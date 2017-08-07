@@ -17,7 +17,7 @@ from docutils import nodes, writers
 from sphinx import addnodes
 from sphinx.locale import admonitionlabels, versionlabels, _
 
-from docxsphinx import docx
+from docxsphinx import sdocx as docx
 import sys
 import os
 import zipfile
