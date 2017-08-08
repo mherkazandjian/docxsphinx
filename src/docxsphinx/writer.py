@@ -126,6 +126,7 @@ class DocxTranslator(nodes.NodeVisitor):
         self.table = None
         self.list_level = 0
         self.column_widths = None
+        self.in_literal_block = False
 
     def add_text(self, text):
         dprint()
@@ -901,13 +902,25 @@ class DocxTranslator(nodes.NodeVisitor):
         # self.end_state()
 
     def visit_literal_block(self, node):
-        # FIXME: working but broken.
         dprint()
+        # Not sure whether this new_state will work when the literal block
+        # is in a list item or a table cell...
         self.new_state()
+        self.in_literal_block = True
 
     def depart_literal_block(self, node):
         dprint()
-        self.end_state()
+        #self.end_state()
+        text = ''.join(self.states.pop())
+        if text:
+            ## self.docbody.append(
+            ##        docx.paragraph(text, self.list_style[-1], breakbefore=True))
+            style = 'Preformatted Text'
+            self.current_paragraph = self.docbody.document.add_paragraph(text, style=style)
+            self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # self.current_paragraph.paragraph_format.left_indent = 0
+
+        self.in_literal_block = False
 
     def visit_doctest_block(self, node):
         dprint()
@@ -1084,12 +1097,13 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         #self.add_text(node.astext())
         text = node.astext()
-        # assert '\n\n' not in text, 'Found \n\n'
-        # Replace double enter with single enter, and single enter with space.
-        string_magic = 'TWOENTERSMAGICSTRING'
-        text = text.replace('\n\n', string_magic)
-        text = text.replace('\n', ' ')
-        text = text.replace(string_magic, '\n')
+        if not self.in_literal_block:
+            # assert '\n\n' not in text, 'Found \n\n'
+            # Replace double enter with single enter, and single enter with space.
+            string_magic = 'TWOENTERSMAGICSTRING'
+            text = text.replace('\n\n', string_magic)
+            text = text.replace('\n', ' ')
+            text = text.replace(string_magic, '\n')
         self.add_text(text)
 
     def depart_Text(self, node):
