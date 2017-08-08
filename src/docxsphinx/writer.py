@@ -123,10 +123,12 @@ class DocxTranslator(nodes.NodeVisitor):
         self.list_style = []
         self.sectionlevel = 0
         self.table = None
+        self.list_level = 0
 
     def add_text(self, text):
         dprint()
-        print(text)
+        # HB: cannot print all text in Python 2 because of unicode characters
+        # print(text)
         self.states[-1].append(text)
 
     def new_state(self):
@@ -140,10 +142,18 @@ class DocxTranslator(nodes.NodeVisitor):
             self.states[-1] = []
             # self.docbody.append(
             #         docx.paragraph(''.join(result), breakbefore=True))
+
+            # TODO: Aargh, this needs to be handled properly. OOXML does not have nested lists.
+            # So here we close the previous state, which might be a list item. See also depart_list_item
+            if self.list_level > 0:
+                style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
+            else:
+                style = None
+
             self.current_paragraph = self.docbody.document.add_paragraph(
-                ''.join(result))
+                ''.join(result), style=style)
             logger.info('\tensure_state: ')
-            print('\t\t', result)
+            # print('\t\t', result)
 
     def end_state(self, first=None):
         dprint()
@@ -154,7 +164,7 @@ class DocxTranslator(nodes.NodeVisitor):
                 result.insert(0, [first + item[0]])
                 result[1] = item[1:]
         self.states[-1].extend(result)
-        print(result)
+        # print(result)
 
     def visit_start_of_file(self, node):
         dprint()
@@ -251,7 +261,7 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint(_func='* heading', text=repr(text), level=self.sectionlevel)
         # self.docbody.append(docx.heading(text, self.sectionlevel))
         self.docbody.document.add_heading(text, level=self.sectionlevel)
-        print(text)
+        # print(text)
 
     def visit_subtitle(self, node):
         dprint()
@@ -577,7 +587,7 @@ class DocxTranslator(nodes.NodeVisitor):
         # text = '\n'.join(self.states.pop())
         text = ' '.join(self.states.pop()).strip()
         self.table[-1].append(text)
-        print(text)
+        #print(text)
 
     def visit_table(self, node):
         dprint()
@@ -660,19 +670,31 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_bullet_list(self, node):
         dprint()
-        self.list_style.append('ListBullet')
+        # TODO: Apparently it is necessary to take into account whether
+        # the list is numbered or not, like the original code did.
+        # But that code did not properly account for the level.
+        # So merge these two attempts.
+        #self.list_style.append('ListBullet')
+        self.new_state()
+        self.list_level += 1
 
     def depart_bullet_list(self, node):
         dprint()
-        self.list_style.pop()
+        #self.list_style.pop()
+        self.list_level -= 1
+        self.end_state()
 
     def visit_enumerated_list(self, node):
         dprint()
-        self.list_style.append('ListNumber')
+        #self.list_style.append('ListNumber')
+        self.new_state()
+        self.list_level += 1
 
     def depart_enumerated_list(self, node):
         dprint()
-        self.list_style.pop()
+        #self.list_style.pop()
+        self.list_level -= 1
+        self.end_state()
 
     def visit_definition_list(self, node):
         dprint()
@@ -686,14 +708,20 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_list_item(self, node):
         dprint()
+        # HB: Not sure a new state should be set here, since a new state
+        #     is now already set in visit_bullet_list.
         self.new_state()
 
     def depart_list_item(self, node):
         dprint()
+        # HB: should this not use end_state() ?
         text = ''.join(self.states.pop())
-        # self.docbody.append(
-        #        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-        self.current_paragraph = self.docbody.document.add_paragraph(text, style='List Paragraph1')
+        if text:
+            ## self.docbody.append(
+            ##        docx.paragraph(text, self.list_style[-1], breakbefore=True))
+            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
+            self.current_paragraph = self.docbody.document.add_paragraph(text, style=style)
+
 
     def visit_definition_list_item(self, node):
         dprint()
