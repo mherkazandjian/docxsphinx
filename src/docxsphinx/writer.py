@@ -181,7 +181,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # HB: I believe this is all wrong, who cares about files?
         #self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
-        self.docbody.document.add_page_break()
+        #self.docbody.document.add_page_break()
 
     def depart_start_of_file(self, node):
         dprint()
