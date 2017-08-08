@@ -574,7 +574,8 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_entry(self, node):
         dprint()
         # text = '\n'.join('\n'.join(x) for x in self.states.pop())
-        text = '\n'.join(self.states.pop())
+        # text = '\n'.join(self.states.pop())
+        text = ' '.join(self.states.pop()).strip()
         self.table[-1].append(text)
         print(text)
 
@@ -612,10 +613,17 @@ class DocxTranslator(nodes.NodeVisitor):
         for row in fmted_rows:
             row_cells = table.add_row().cells
             for i, cell in enumerate(row):
-                # row_cells[i].text = cell
+                row_cell = row_cells[i]
+                row_cell.text = cell
+                para = row_cell.paragraphs[0]
+                # TODO: These below should not be here but fixed in the style in the template!
+                para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                para.paragraph_format.left_indent = 0
+
+
                 # row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                paragraph = row_cells[i].add_paragraph(cell)
-                paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                #paragraph = row_cells[i].add_paragraph(cell.strip())
+                #paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         # self.docbody.append(docx.table(fmted_rows))
         self.table = None
