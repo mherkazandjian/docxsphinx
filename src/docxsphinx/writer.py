@@ -9,30 +9,34 @@
         Copyright 2010 by shimizukawa at gmail dot com (Sphinx-users.jp).
     :license: BSD, see LICENSE for details.
 """
-
+import os
+import sys
+import zipfile
+import tempfile
 import re
+
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from docutils import nodes, writers
 
 from sphinx import addnodes
 from sphinx.locale import admonitionlabels, versionlabels, _
 
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
 from docxsphinx import sdocx as docx
-import sys
-import os
-import zipfile
-import tempfile
 
 import logging
-logging.basicConfig(filename='docx.log', filemode='w', level=logging.INFO,
-        format="%(asctime)-15s  %(message)s")
+logging.basicConfig(
+    filename='docx.log',
+    filemode='w',
+    level=logging.INFO,
+    format="%(asctime)-15s  %(message)s"
+)
 logger = logging.getLogger('docx')
 
 
 
 def dprint(_func=None, **kw):
+    logger.info('-'*50)
     f = sys._getframe(1)
     if kw:
         text = ', '.join('%s = %s' % (k, v) for k, v in kw.items())
@@ -64,39 +68,39 @@ class DocxWriter(writers.Writer):
     def __init__(self, builder):
         writers.Writer.__init__(self)
         self.builder = builder
-        self.template_setup() # setup before call almost docx methods.
+        self.template_setup()  # setup before call almost docx methods.
 
         dc = DocxContaner()
         dc.document = docx.newdocument()
-        #dc.docbody = dc.document.xpath(
-        #        '/w:document/w:body', namespaces=docx.nsprefixes)[0]
-        #dc.relationships = docx.relationshiplist()
-        #dc.appprops = docx.appproperties()
-        #dc.contenttypes = docx.contenttypes()
-        #dc.websettings = docx.websettings()
+        # dc.docbody = dc.document.xpath(
+        #         '/w:document/w:body', namespaces=docx.nsprefixes)[0]
+        # dc.relationships = docx.relationshiplist()
+        # dc.appprops = docx.appproperties()
+        # dc.contenttypes = docx.contenttypes()
+        # dc.websettings = docx.websettings()
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
-            #dotx = os.path.join(self.builder.env.srcdir, dotx)
-            #z = zipfile.ZipFile(dotx, 'r')
-            #template_dir = tempfile.mkdtemp(prefix='docx-')
-            #z.extractall(template_dir)
-            #docx.set_template(template_dir)
+            # dotx = os.path.join(self.builder.env.srcdir, dotx)
+            # z = zipfile.ZipFile(dotx, 'r')
+            # template_dir = tempfile.mkdtemp(prefix='docx-')
+            # z.extractall(template_dir)
+            # docx.set_template(template_dir)
+            logger.info("MK using template {}".format(dotx))
             docx.set_template(dotx)
 
     def save(self, filename):
         dc = self.docx_container
-        #wordrelationships = docx.wordrelationships(dc.relationships)
-        #coreprops = docx.coreproperties(
-        #        title='Python docx demo',
-        #        subject='A practical example of making docx from Python',
-        #        creator='Mike MacCana',
-        #        keywords=['python', 'Office Open XML', 'Word'])
-
-        #docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
-        #        dc.websettings, wordrelationships, filename)
+        # wordrelationships = docx.wordrelationships(dc.relationships)
+        # coreprops = docx.coreproperties(
+        #         title='Python docx demo',
+        #         subject='A practical example of making docx from Python',
+        #         creator='Mike MacCana',
+        #         keywords=['python', 'Office Open XML', 'Word'])
+        # docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
+        #         dc.websettings, wordrelationships, filename)
         dc.document.save(filename)
 
     def translate(self):
@@ -122,6 +126,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def add_text(self, text):
         dprint()
+        print(text)
         self.states[-1].append(text)
 
     def new_state(self):
@@ -133,9 +138,12 @@ class DocxTranslator(nodes.NodeVisitor):
         if self.states and self.states[-1]:
             result = self.states[-1]
             self.states[-1] = []
-            #self.docbody.append(
-            #        docx.paragraph(''.join(result), breakbefore=True))
-            self.current_paragraph = self.docbody.document.add_paragraph(''.join(result))
+            # self.docbody.append(
+            #         docx.paragraph(''.join(result), breakbefore=True))
+            self.current_paragraph = self.docbody.document.add_paragraph(
+                ''.join(result))
+            logger.info('\tensure_state: ')
+            print('\t\t', result)
 
     def end_state(self, first=None):
         dprint()
@@ -146,6 +154,7 @@ class DocxTranslator(nodes.NodeVisitor):
                 result.insert(0, [first + item[0]])
                 result[1] = item[1:]
         self.states[-1].extend(result)
+        print(result)
 
     def visit_start_of_file(self, node):
         dprint()
@@ -191,12 +200,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_topic(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_topic(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     visit_sidebar = visit_topic
     depart_sidebar = depart_topic
@@ -204,14 +213,14 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_rubric(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #self.add_text('-[ ')
+        # self.new_state()
+        # self.add_text('-[ ')
 
     def depart_rubric(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(' ]-')
-        #self.end_state()
+        # self.add_text(' ]-')
+        # self.end_state()
 
     def visit_compound(self, node):
         dprint()
@@ -240,8 +249,9 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         text = ''.join(self.states.pop())
         dprint(_func='* heading', text=repr(text), level=self.sectionlevel)
-        #self.docbody.append(docx.heading(text, self.sectionlevel))
+        # self.docbody.append(docx.heading(text, self.sectionlevel))
         self.docbody.document.add_heading(text, level=self.sectionlevel)
+        print(text)
 
     def visit_subtitle(self, node):
         dprint()
@@ -254,7 +264,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_attribution(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('-- ')
+        # self.add_text('-- ')
 
     def depart_attribution(self, node):
         dprint()
@@ -271,15 +281,15 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_signature(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #if node.parent['objtype'] in ('class', 'exception'):
-        #    self.add_text('%s ' % node.parent['objtype'])
+        # self.new_state()
+        # if node.parent['objtype'] in ('class', 'exception'):
+        #     self.add_text('%s ' % node.parent['objtype'])
 
     def depart_desc_signature(self, node):
         dprint()
         raise nodes.SkipNode
-        ## XXX: wrap signatures in a way that makes sense
-        #self.end_state()
+        # XXX: wrap signatures in a way that makes sense
+        # self.end_state()
 
     def visit_desc_name(self, node):
         dprint()
@@ -308,7 +318,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_returns(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(' -> ')
+        # self.add_text(' -> ')
 
     def depart_desc_returns(self, node):
         dprint()
@@ -317,33 +327,33 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_parameterlist(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('(')
-        #self.first_param = 1
+        # self.add_text('(')
+        # self.first_param = 1
 
     def depart_desc_parameterlist(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(')')
+        # self.add_text(')')
 
     def visit_desc_parameter(self, node):
         dprint()
         raise nodes.SkipNode
-        #if not self.first_param:
-        #    self.add_text(', ')
-        #else:
-        #    self.first_param = 0
-        #self.add_text(node.astext())
-        #raise nodes.SkipNode
+        # if not self.first_param:
+        #     self.add_text(', ')
+        # else:
+        #     self.first_param = 0
+        # self.add_text(node.astext())
+        # raise nodes.SkipNode
 
     def visit_desc_optional(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('[')
+        # self.add_text('[')
 
     def depart_desc_optional(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(']')
+        # self.add_text(']')
 
     def visit_desc_annotation(self, node):
         dprint()
@@ -364,13 +374,13 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_content(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #self.add_text('\n')
+        # self.new_state()
+        # self.add_text('\n')
 
     def depart_desc_content(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_figure(self, node):
         # FIXME: figure text become normal paragraph instead of caption.
@@ -392,20 +402,20 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_productionlist(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #names = []
-        #for production in node:
-        #    names.append(production['tokenname'])
-        #maxlen = max(len(name) for name in names)
-        #for production in node:
-        #    if production['tokenname']:
-        #        self.add_text(production['tokenname'].ljust(maxlen) + ' ::=')
-        #        lastname = production['tokenname']
-        #    else:
-        #        self.add_text('%s    ' % (' '*len(lastname)))
-        #    self.add_text(production.astext() + '\n')
-        #self.end_state()
-        #raise nodes.SkipNode
+        # self.new_state()
+        # names = []
+        # for production in node:
+        #     names.append(production['tokenname'])
+        # maxlen = max(len(name) for name in names)
+        # for production in node:
+        #     if production['tokenname']:
+        #         self.add_text(production['tokenname'].ljust(maxlen) + ' ::=')
+        #         lastname = production['tokenname']
+        #     else:
+        #         self.add_text('%s    ' % (' '*len(lastname)))
+        #     self.add_text(production.astext() + '\n')
+        # self.end_state()
+        # raise nodes.SkipNode
 
     def visit_seealso(self, node):
         dprint()
@@ -418,27 +428,27 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_footnote(self, node):
         dprint()
         raise nodes.SkipNode
-        #self._footnote = node.children[0].astext().strip()
-        #self.new_state()
+        # self._footnote = node.children[0].astext().strip()
+        # self.new_state()
 
     def depart_footnote(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state(first='[%s] ' % self._footnote)
+        # self.end_state(first='[%s] ' % self._footnote)
 
     def visit_citation(self, node):
         dprint()
         raise nodes.SkipNode
-        #if len(node) and isinstance(node[0], nodes.label):
-        #    self._citlabel = node[0].astext()
-        #else:
-        #    self._citlabel = ''
-        #self.new_state()
+        # if len(node) and isinstance(node[0], nodes.label):
+        #     self._citlabel = node[0].astext()
+        # else:
+        #     self._citlabel = ''
+        # self.new_state()
 
     def depart_citation(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state(first='[%s] ' % self._citlabel)
+        # self.end_state(first='[%s] ' % self._citlabel)
 
     def visit_label(self, node):
         dprint()
@@ -457,30 +467,30 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_option_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_option_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_option_group(self, node):
         dprint()
         raise nodes.SkipNode
-        #self._firstoption = True
+        # self._firstoption = True
 
     def depart_option_group(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('     ')
+        # self.add_text('     ')
 
     def visit_option(self, node):
         dprint()
         raise nodes.SkipNode
-        #if self._firstoption:
-        #    self._firstoption = False
-        #else:
-        #    self.add_text(', ')
+        # if self._firstoption:
+        #     self._firstoption = False
+        # else:
+        #     self.add_text(', ')
 
     def depart_option(self, node):
         dprint()
@@ -497,7 +507,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_option_argument(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(node['delimiter'])
+        # self.add_text(node['delimiter'])
 
     def depart_option_argument(self, node):
         dprint()
@@ -563,9 +573,10 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_entry(self, node):
         dprint()
-        #text = '\n'.join('\n'.join(x) for x in self.states.pop())
+        # text = '\n'.join('\n'.join(x) for x in self.states.pop())
         text = '\n'.join(self.states.pop())
         self.table[-1].append(text)
+        print(text)
 
     def visit_table(self, node):
         dprint()
@@ -594,28 +605,29 @@ class DocxTranslator(nodes.NodeVisitor):
         logger.info("HB {} {}".format(nrows, nncols))
         logger.info("HB {}".format(fmted_rows[0]))
 
-        table = self.docbody.document.add_table(rows=0, cols=ncols, style='Grid Table 4')
-        #table.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        table = self.docbody.document.add_table(
+            rows=0, cols=ncols, style='Grid Table 4')
+        # table.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
         for row in fmted_rows:
             row_cells = table.add_row().cells
             for i, cell in enumerate(row):
-                #row_cells[i].text = cell
-                #row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                # row_cells[i].text = cell
+                # row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 paragraph = row_cells[i].add_paragraph(cell)
                 paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-        #self.docbody.append(docx.table(fmted_rows))
+        # self.docbody.append(docx.table(fmted_rows))
         self.table = None
         self.end_state()
 
     def visit_acks(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #self.add_text(', '.join(n.astext() for n in node.children[0].children)
-        #              + '.')
-        #self.end_state()
+        # self.new_state()
+        # self.add_text(', '.join(n.astext() for n in node.children[0].children)
+        #               + '.')
+        # self.end_state()
         raise nodes.SkipNode
 
     def visit_image(self, node):
@@ -634,9 +646,9 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_transition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #self.add_text('=' * 70)
-        #self.end_state()
+        # self.new_state()
+        # self.add_text('=' * 70)
+        # self.end_state()
 
     def visit_bullet_list(self, node):
         dprint()
@@ -657,12 +669,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_definition_list(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.list_style.append(-2)
+        # self.list_style.append(-2)
 
     def depart_definition_list(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.list_style.pop()
+        # self.list_style.pop()
 
     def visit_list_item(self, node):
         dprint()
@@ -671,15 +683,15 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_list_item(self, node):
         dprint()
         text = ''.join(self.states.pop())
-        #self.docbody.append(
+        # self.docbody.append(
         #        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-        self.docbody.document.add_paragraph(text, style='ListBullet')
+        self.docbody.document.add_paragraph(text, style='List Paragraph1')
 
     def visit_definition_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        #self._li_has_classifier = len(node) >= 2 and \
-        #                          isinstance(node[1], nodes.classifier)
+        # self._li_has_classifier = len(node) >= 2 and \
+        #                           isinstance(node[1], nodes.classifier)
 
     def depart_definition_list_item(self, node):
         dprint()
@@ -688,13 +700,13 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_term(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_term(self, node):
         dprint()
         raise nodes.SkipNode
-        #if not self._li_has_classifier:
-        #    self.end_state()
+        # if not self._li_has_classifier:
+        #     self.end_state()
 
     def visit_classifier(self, node):
         dprint()
@@ -704,17 +716,17 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_classifier(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_definition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_definition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_field_list(self, node):
         dprint()
@@ -735,23 +747,23 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_field_name(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_field_name(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(':')
-        #self.end_state()
+        # self.add_text(':')
+        # self.end_state()
 
     def visit_field_body(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_field_body(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_centered(self, node):
         dprint()
@@ -780,23 +792,23 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def _visit_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def _make_depart_admonition(name):
         def depart_admonition(self, node):
             dprint()
             raise nodes.SkipNode
-            #self.end_state(first=admonitionlabels[name] + ': ')
+            # self.end_state(first=admonitionlabels[name] + ': ')
         return depart_admonition
 
     visit_attention = _visit_admonition
@@ -821,18 +833,18 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #if node.children:
-        #    self.add_text(
-        #            versionlabels[node['type']] % node['version'] + ': ')
-        #else:
-        #    self.add_text(
-        #            versionlabels[node['type']] % node['version'] + '.')
+        # self.new_state()
+        # if node.children:
+        #     self.add_text(
+        #             versionlabels[node['type']] % node['version'] + ': ')
+        # else:
+        #     self.add_text(
+        #             versionlabels[node['type']] % node['version'] + '.')
 
     def depart_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_literal_block(self, node):
         # FIXME: working but broken.
@@ -846,22 +858,22 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_doctest_block(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_doctest_block(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_line_block(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
+        # self.new_state()
 
     def depart_line_block(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.end_state()
+        # self.end_state()
 
     def visit_line(self, node):
         dprint()
@@ -891,15 +903,15 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_paragraph(self, node):
         dprint()
         self.ensure_state()
-        #if not isinstance(node.parent, nodes.Admonition) or \
-        #       isinstance(node.parent, addnodes.seealso):
-        #    self.new_state()
+        # if not isinstance(node.parent, nodes.Admonition) or \
+        #        isinstance(node.parent, addnodes.seealso):
+        #     self.new_state()
 
     def depart_paragraph(self, node):
         dprint()
-        #if not isinstance(node.parent, nodes.Admonition) or \
-        #       isinstance(node.parent, addnodes.seealso):
-        #    self.end_state()
+        # if not isinstance(node.parent, nodes.Admonition) or \
+        #        isinstance(node.parent, addnodes.seealso):
+        #     self.end_state()
 
     def visit_target(self, node):
         dprint()
@@ -939,57 +951,57 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_emphasis(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def depart_emphasis(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def visit_literal_emphasis(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def depart_literal_emphasis(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def visit_strong(self, node):
         dprint()
-        #self.add_text('**')
+        # self.add_text('**')
 
     def depart_strong(self, node):
         dprint()
-        #self.add_text('**')
+        # self.add_text('**')
 
     def visit_abbreviation(self, node):
         dprint()
-        #self.add_text('')
+        # self.add_text('')
 
     def depart_abbreviation(self, node):
         dprint()
-        #if node.hasattr('explanation'):
-        #    self.add_text(' (%s)' % node['explanation'])
+        # if node.hasattr('explanation'):
+        #     self.add_text(' (%s)' % node['explanation'])
 
     def visit_title_reference(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def depart_title_reference(self, node):
         dprint()
-        #self.add_text('*')
+        # self.add_text('*')
 
     def visit_literal(self, node):
         dprint()
-        #self.add_text('``')
+        # self.add_text('``')
 
     def depart_literal(self, node):
         dprint()
-        #self.add_text('``')
+        # self.add_text('``')
 
     def visit_subscript(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('_')
+        # self.add_text('_')
 
     def depart_subscript(self, node):
         dprint()
@@ -998,7 +1010,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_superscript(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('^')
+        # self.add_text('^')
 
     def depart_superscript(self, node):
         dprint()
@@ -1007,12 +1019,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_footnote_reference(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('[%s]' % node.astext())
+        # self.add_text('[%s]' % node.astext())
 
     def visit_citation_reference(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('[%s]' % node.astext())
+        # self.add_text('[%s]' % node.astext())
 
     def visit_Text(self, node):
         dprint()
@@ -1041,19 +1053,19 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_problematic(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('>>')
+        # self.add_text('>>')
 
     def depart_problematic(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text('<<')
+        # self.add_text('<<')
 
     def visit_system_message(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.new_state()
-        #self.add_text('<SYSTEM MESSAGE: %s>' % node.astext())
-        #self.end_state()
+        # self.new_state()
+        # self.add_text('<SYSTEM MESSAGE: %s>' % node.astext())
+        # self.end_state()
 
     def visit_comment(self, node):
         dprint()
@@ -1067,10 +1079,10 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_raw(self, node):
         dprint()
         raise nodes.SkipNode
-        #if 'text' in node.get('format', '').split():
-        #    self.body.append(node.astext())
+        # if 'text' in node.get('format', '').split():
+        #     self.body.append(node.astext())
 
     def unknown_visit(self, node):
         dprint()
         raise nodes.SkipNode
-        #raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
+        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)

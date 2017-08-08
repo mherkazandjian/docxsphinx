@@ -27,7 +27,7 @@ setup(
      description='Sphinx docx builder extension.',
      long_description=long_description,
      classifiers=classifiers,
-     keywords=['sphinx','extension','builder', 'docx','OpenXML'],
+     keywords=['sphinx', 'extension', 'builder', 'docx', 'OpenXML'],
      author='Takayuki SHIMIZUKAWA',
      author_email='shimizukawa at gmail dot com',
      url='http://bitbucket.org/shimizukawa/docxsphinx',
