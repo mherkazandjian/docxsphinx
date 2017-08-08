@@ -150,9 +150,11 @@ class DocxTranslator(nodes.NodeVisitor):
             else:
                 style = None
 
-            self.current_paragraph = self.docbody.document.add_paragraph(
-                ''.join(result), style=style)
-            logger.info('\tensure_state: ')
+            text = ''.join(result)
+            if text:
+                self.current_paragraph = self.docbody.document.add_paragraph(
+                    text, style=style)
+                logger.info('\tensure_state: ')
             # print('\t\t', result)
 
     def end_state(self, first=None):
@@ -1064,7 +1066,15 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_Text(self, node):
         dprint()
-        self.add_text(node.astext())
+        #self.add_text(node.astext())
+        text = node.astext()
+        # assert '\n\n' not in text, 'Found \n\n'
+        # Replace double enter with single enter, and single enter with space.
+        string_magic = 'TWOENTERSMAGICSTRING'
+        text = text.replace('\n\n', string_magic)
+        text = text.replace('\n', ' ')
+        text = text.replace(string_magic, '\n')
+        self.add_text(text)
 
     def depart_Text(self, node):
         dprint()
