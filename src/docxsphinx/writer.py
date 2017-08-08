@@ -651,6 +651,10 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # self.docbody.append(docx.table(fmted_rows))
         self.table = None
+
+        # Add an empty paragraph to prevent tables from being concatenated.
+        # TODO: Figure out some better solution.
+        self.docbody.document.add_paragraph("")
         self.end_state()
 
     def visit_acks(self, node):
