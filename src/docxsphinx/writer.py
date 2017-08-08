@@ -583,7 +583,7 @@ class DocxTranslator(nodes.NodeVisitor):
         if self.table:
             raise NotImplementedError('Nested tables are not supported.')
         self.new_state()
-        self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        #self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         self.table = [[]]
 
     def depart_table(self, node):
@@ -685,7 +685,7 @@ class DocxTranslator(nodes.NodeVisitor):
         text = ''.join(self.states.pop())
         # self.docbody.append(
         #        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-        self.docbody.document.add_paragraph(text, style='List Paragraph1')
+        self.current_paragraph = self.docbody.document.add_paragraph(text, style='List Paragraph1')
 
     def visit_definition_list_item(self, node):
         dprint()
