@@ -16,6 +16,7 @@ import tempfile
 import re
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm
 
 from docutils import nodes, writers
 
@@ -124,6 +125,7 @@ class DocxTranslator(nodes.NodeVisitor):
         self.sectionlevel = 0
         self.table = None
         self.list_level = 0
+        self.column_widths = None
 
     def add_text(self, text):
         dprint()
@@ -535,11 +537,18 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_tabular_col_spec(self, node):
         dprint()
+        # TODO: properly implement this!!
+        spec = node['spec']
+        widths = [float(l.split('cm')[0]) for l in spec.split("{")[1:]]
+        self.column_widths = widths
         raise nodes.SkipNode
 
     def visit_colspec(self, node):
         dprint()
         self.table[0].append(node['colwidth'])
+        #print("HB colwidth {}".format(node['colwidth']))
+        # 22, the width of the column in ascii
+        raise nodes.SkipNode
 
     def depart_colspec(self, node):
         dprint()
@@ -618,9 +627,12 @@ class DocxTranslator(nodes.NodeVisitor):
         logger.info("HB {} {}".format(nrows, nncols))
         logger.info("HB {}".format(fmted_rows[0]))
 
-        table = self.docbody.document.add_table(
-            rows=0, cols=ncols, style='Grid Table 4')
-        # table.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        if self.column_widths is None:
+            table = self.docbody.document.add_table(rows=0, cols=ncols, style='Grid Table 4')
+        else:
+            table = self.docbody.document.add_table(rows=0, cols=0, style='Grid Table 4')
+            cols = [table.add_column(Cm(colwidth)) for colwidth in self.column_widths]
+            self.column_widths = None
 
         for row in fmted_rows:
             row_cells = table.add_row().cells
