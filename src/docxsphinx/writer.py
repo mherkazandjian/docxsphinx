@@ -127,6 +127,8 @@ class DocxTranslator(nodes.NodeVisitor):
         self.list_level = 0
         self.column_widths = None
         self.in_literal_block = False
+        self.table_style_default = 'Grid Table 4'
+        self.table_style = self.table_style_default
 
     def add_text(self, text):
         dprint()
@@ -628,10 +630,11 @@ class DocxTranslator(nodes.NodeVisitor):
         logger.info("HB {} {}".format(nrows, nncols))
         logger.info("HB {}".format(fmted_rows[0]))
 
+        # 'Grid Table 4'
         if self.column_widths is None:
-            table = self.docbody.document.add_table(rows=0, cols=ncols, style='Grid Table 4')
+            table = self.docbody.document.add_table(rows=0, cols=ncols, style=self.table_style)
         else:
-            table = self.docbody.document.add_table(rows=0, cols=0, style='Grid Table 4')
+            table = self.docbody.document.add_table(rows=0, cols=0, style=self.table_style)
             cols = [table.add_column(Cm(colwidth)) for colwidth in self.column_widths]
             self.column_widths = None
 
@@ -652,6 +655,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # self.docbody.append(docx.table(fmted_rows))
         self.table = None
+        self.table_style = self.table_style_default
 
         # Add an empty paragraph to prevent tables from being concatenated.
         # TODO: Figure out some better solution.
@@ -1145,6 +1149,12 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_comment(self, node):
         dprint()
+        # TODO: FIX Dirty hack / kludge to set table style.
+        # Use proper directives or something like that
+        comment = node[0]
+        if 'DocxTableStyle' in comment:
+            self.table_style = comment.split('DocxTableStyle')[-1].strip()
+        print("HB tablestyle {}".format(self.table_style))
         raise nodes.SkipNode
 
     def visit_meta(self, node):
