@@ -129,18 +129,21 @@ def update_stylenames(style_file):
 # END of QUICK-HACK
 
 
-def opendocx(file):
+def opendocx(fname):
     """
     Open a docx file using the python-docx package
 
-    :param str file: the file name of the template
+    :param str fname: the file name of the template
     :return: docx.document.Document
     """
     # mydoc = zipfile.ZipFile(file)
     # xmlcontent = mydoc.read('word/document.xml').encode()
     # document = etree.fromstring(xmlcontent)
     # raise Exception, file
-    document = docx.Document('source/' + file)
+    if fname == 'NO':
+        document = docx.Document()
+    else:
+        document = docx.Document(os.path.join('source', fname))
     return document
 
 
