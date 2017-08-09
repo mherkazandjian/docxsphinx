@@ -129,6 +129,7 @@ class DocxTranslator(nodes.NodeVisitor):
         self.in_literal_block = False
         self.table_style_default = 'Grid Table 4'
         self.table_style = self.table_style_default
+        self.more_cols = 0
 
     def add_text(self, text):
         dprint()
@@ -590,9 +591,11 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_entry(self, node):
         dprint()
-        if 'morerows' in node or 'morecols' in node:
-            raise NotImplementedError('Column or row spanning cells are '
-                                      'not implemented.')
+        if 'morerows' in node:
+            raise NotImplementedError('Row spanning cells are not implemented.')
+        if 'morecols' in node:
+            # Hack to make column spanning possible. TODO FIX
+            self.more_cols = node['morecols']
         self.new_state()
 
     def depart_entry(self, node):
@@ -601,6 +604,9 @@ class DocxTranslator(nodes.NodeVisitor):
         # text = '\n'.join(self.states.pop())
         text = ' '.join(self.states.pop()).strip()
         self.table[-1].append(text)
+        # Hack to make column spanning possible. TODO FIX
+        self.table[-1] += ['DOCXPYTHONJOINLEFT'] * self.more_cols
+        self.more_cols = 0
         #print(text)
 
     def visit_table(self, node):
@@ -640,14 +646,19 @@ class DocxTranslator(nodes.NodeVisitor):
 
         for row in fmted_rows:
             row_cells = table.add_row().cells
+            cell_left = None
             for i, cell in enumerate(row):
                 row_cell = row_cells[i]
-                row_cell.text = cell
-                para = row_cell.paragraphs[0]
-                # TODO: These below should not be here but fixed in the style in the template!
-                para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                para.paragraph_format.left_indent = 0
-
+                if cell == 'DOCXPYTHONJOINLEFT':
+                    # Hack to make column spanning possible. TODO FIX
+                    row_cell = cell_left.merge(row_cell)
+                else:
+                    row_cell.text = cell
+                    para = row_cell.paragraphs[0]
+                    # TODO: These below should not be here but fixed in the style in the template!
+                    para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    para.paragraph_format.left_indent = 0
+                cell_left = row_cell
 
                 # row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 #paragraph = row_cells[i].add_paragraph(cell.strip())
