@@ -9,6 +9,7 @@
         Copyright 2010 by shimizukawa at gmail dot com (Sphinx-users.jp).
     :license: BSD, see LICENSE for details.
 """
+from __future__ import division
 import os
 import sys
 import zipfile
@@ -556,7 +557,7 @@ class DocxTranslator(nodes.NodeVisitor):
             self.column_widths = self.column_widths[1:]
             col = self.table.add_column(Cm(width))
         else:
-            col = self.table.add_column(self.docbody.document._block_width / self.ncolumns)
+            col = self.table.add_column(self.docbody.document._block_width // self.ncolumns)
 
         raise nodes.SkipNode
 
@@ -633,8 +634,19 @@ class DocxTranslator(nodes.NodeVisitor):
         #if self.table:
         #    raise NotImplementedError('Nested tables are not supported.')
         self.new_state()
+
         # Columns are added when a colspec is visited.
-        self.table = self.current_location[-1].add_table(rows=0, cols=0, style=self.table_style)
+        try:
+            self.table = self.current_location[-1].add_table(
+                rows=0, cols=0, style=self.table_style
+            )
+        except KeyError as exc:
+            msg = ('looks like style "{}" is missing\n{}\n'
+                   'using no style').format(self.table_style, repr(exc))
+            logger.warning(msg)
+            self.table = self.current_location[-1].add_table(
+                rows=0, cols=0, style=None
+            )
 
     def depart_table(self, node):
         dprint()
@@ -721,8 +733,14 @@ class DocxTranslator(nodes.NodeVisitor):
         # A new paragraph is created here, but the next visit is to
         # paragraph, so that would add another paragraph. That is
         # prevented if current_paragraph is an empty List paragraph.
-        style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-        self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+        try:
+            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
+            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+        except KeyError as exc:
+            msg = ('looks like style "{}" is missing\n{}\n'
+                   'using no style').format(style, repr(exc))
+            logger.warning(msg)
+            self.current_paragraph = self.docbody.document.add_paragraph(style=None)
 
     def depart_list_item(self, node):
         dprint()
@@ -895,8 +913,16 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Unlike with Lists, there will not be a visit to paragraph in a
         # literal block, so we *must* create the paragraph here.
-        style = 'Preformatted Text'
-        self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+        try:
+            style = 'Preformatted Text'
+            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+        except KeyError as exc:
+            msg = ('looks like style "{}" is missing\n{}\n'
+                   'using no style').format(self.table_style, repr(exc))
+            logger.warning(msg)
+            style = None
+            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     def depart_literal_block(self, node):
