@@ -15,8 +15,10 @@ import zipfile
 import tempfile
 import re
 
+# noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm
+from docx.table import _Cell
 
 from docutils import nodes, writers
 
@@ -130,39 +132,34 @@ class DocxTranslator(nodes.NodeVisitor):
         self.table_style_default = 'Grid Table 4'
         self.table_style = self.table_style_default
         self.more_cols = 0
+        self.row = None
+        self.cell_counter = 0
+        self.strong = False
+        self.emphasis = False
+
+        # Self.current_location store places where paragraphs will be added, e.g.
+        # typically [document, table-cell]
+        self.current_location = [self.docbody.document]
+
+        self.ncolumns = 1
+        "Number of columns in the current table."
 
     def add_text(self, text):
         dprint()
         # HB: cannot print all text in Python 2 because of unicode characters
         # print(text)
-        self.states[-1].append(text)
+        textrun = self.current_paragraph.add_run(text)
+        if self.strong:
+            textrun.bold = True
+        if self.emphasis:
+            textrun.italic = True
 
+    # TODO: Remove all this state stuff, it should not be necessary anymore
     def new_state(self):
         dprint()
-        self.ensure_state()
         self.states.append([])
 
-    def ensure_state(self):
-        if self.states and self.states[-1]:
-            result = self.states[-1]
-            self.states[-1] = []
-            # self.docbody.append(
-            #         docx.paragraph(''.join(result), breakbefore=True))
-
-            # TODO: Aargh, this needs to be handled properly. OOXML does not have nested lists.
-            # So here we close the previous state, which might be a list item. See also depart_list_item
-            if self.list_level > 0:
-                style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-            else:
-                style = None
-
-            text = ''.join(result)
-            if text:
-                self.current_paragraph = self.docbody.document.add_paragraph(
-                    text, style=style)
-                logger.info('\tensure_state: ')
-            # print('\t\t', result)
-
+    # TODO: Remove all this state stuff, it should not be necessary anymore
     def end_state(self, first=None):
         dprint()
         result = self.states.pop()
@@ -211,7 +208,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_section(self, node):
         dprint()
-        self.ensure_state()
+        #self.ensure_state()
         if self.sectionlevel > 0:
             self.sectionlevel -= 1
 
@@ -258,18 +255,12 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_title(self, node):
         dprint()
-        #if isinstance(node.parent, nodes.Admonition):
-        #    self.add_text(node.astext()+': ')
-        #    raise nodes.SkipNode
         self.new_state()
+        self.current_paragraph = self.current_location[-1].add_heading(level=self.sectionlevel)
+
 
     def depart_title(self, node):
         dprint()
-        text = ''.join(self.states.pop())
-        dprint(_func='* heading', text=repr(text), level=self.sectionlevel)
-        # self.docbody.append(docx.heading(text, self.sectionlevel))
-        self.docbody.document.add_heading(text, level=self.sectionlevel)
-        # print(text)
 
     def visit_subtitle(self, node):
         dprint()
@@ -549,9 +540,24 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_colspec(self, node):
         dprint()
-        self.table[0].append(node['colwidth'])
+        # The difficulty here is getting the right column width.
+        # This can be specified with a tabular_col_spec, see above.
+        #
+        # Otherwise it is derived from the number of columns, which is
+        # defined in visit_tgroup (a bit hackish).
+        # The _block_width is the full width of the document, and this
+        # is divided by the number of columns.
+        #
+        # It would perhaps also be possible to use node['colwidth'] in some way.
         #print("HB colwidth {}".format(node['colwidth']))
         # 22, the width of the column in ascii
+        if self.column_widths:
+            width = self.column_widths[0]
+            self.column_widths = self.column_widths[1:]
+            col = self.table.add_column(Cm(width))
+        else:
+            col = self.table.add_column(self.docbody.document._block_width / self.ncolumns)
+
         raise nodes.SkipNode
 
     def depart_colspec(self, node):
@@ -559,10 +565,14 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_tgroup(self, node):
         dprint()
+        colspecs = [c for c in node.children if isinstance(c, nodes.colspec)]
+        self.ncolumns = len(colspecs)
+        print("HB VT {} {} {}".format(self.ncolumns, len(node.children), [type(c) for c in node.children]))
         pass
 
     def depart_tgroup(self, node):
         dprint()
+        self.ncolumns = 1
         pass
 
     def visit_thead(self, node):
@@ -575,7 +585,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_tbody(self, node):
         dprint()
-        self.table.append('sep')
+        #self.table.append('sep')
 
     def depart_tbody(self, node):
         dprint()
@@ -583,7 +593,8 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_row(self, node):
         dprint()
-        self.table.append([])
+        self.row = self.table.add_row()
+        self.cell_counter = 0
 
     def depart_row(self, node):
         dprint()
@@ -597,74 +608,37 @@ class DocxTranslator(nodes.NodeVisitor):
             # Hack to make column spanning possible. TODO FIX
             self.more_cols = node['morecols']
         self.new_state()
+        cell = self.row.cells[self.cell_counter]
+        # A new paragraph will be added by Sphinx, so remove the automated one
+        # This turns out to be not possible, so instead the existing one is
+        # reused in visit_paragraph.
+        #cell.paragraphs.pop()
+        if self.more_cols:
+            # Perhaps this commented line works no too.
+            #cell = cell.merge(self.row.cells[self.cell_counter + self.more_cols])
+            for i in range(self.more_cols):
+                cell = cell.merge(self.row.cells[self.cell_counter + i + 1])
+
+        self.current_location.append(cell)
 
     def depart_entry(self, node):
         dprint()
-        # text = '\n'.join('\n'.join(x) for x in self.states.pop())
-        # text = '\n'.join(self.states.pop())
-        text = ' '.join(self.states.pop()).strip()
-        self.table[-1].append(text)
-        # Hack to make column spanning possible. TODO FIX
-        self.table[-1] += ['DOCXPYTHONJOINLEFT'] * self.more_cols
+        self.cell_counter = self.cell_counter + self.more_cols + 1
         self.more_cols = 0
-        #print(text)
+        self.current_location.pop()
 
     def visit_table(self, node):
         dprint()
-        if self.table:
-            raise NotImplementedError('Nested tables are not supported.')
+        # Not sure whether nested tables work now, maybe.
+        #if self.table:
+        #    raise NotImplementedError('Nested tables are not supported.')
         self.new_state()
-        #self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        self.table = [[]]
+        # Columns are added when a colspec is visited.
+        self.table = self.current_location[-1].add_table(rows=0, cols=0, style=self.table_style)
 
     def depart_table(self, node):
         dprint()
-        lines = self.table[1:]
-        fmted_rows = []
 
-        # don't allow paragraphs in table cells for now
-        for line in lines:
-            if line == 'sep':
-                pass
-            else:
-                fmted_rows.append(line)
-
-        nrows = len(fmted_rows)
-        ncols = len(fmted_rows[0])
-        nncols = [len(r) for r in fmted_rows]
-
-        logger.info("HB {} {}".format(nrows, nncols))
-        logger.info("HB {}".format(fmted_rows[0]))
-
-        # 'Grid Table 4'
-        if self.column_widths is None:
-            table = self.docbody.document.add_table(rows=0, cols=ncols, style=self.table_style)
-        else:
-            table = self.docbody.document.add_table(rows=0, cols=0, style=self.table_style)
-            cols = [table.add_column(Cm(colwidth)) for colwidth in self.column_widths]
-            self.column_widths = None
-
-        for row in fmted_rows:
-            row_cells = table.add_row().cells
-            cell_left = None
-            for i, cell in enumerate(row):
-                row_cell = row_cells[i]
-                if cell == 'DOCXPYTHONJOINLEFT':
-                    # Hack to make column spanning possible. TODO FIX
-                    row_cell = cell_left.merge(row_cell)
-                else:
-                    row_cell.text = cell
-                    para = row_cell.paragraphs[0]
-                    # TODO: These below should not be here but fixed in the style in the template!
-                    para.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    para.paragraph_format.left_indent = 0
-                cell_left = row_cell
-
-                # row_cells[i].paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                #paragraph = row_cells[i].add_paragraph(cell.strip())
-                #paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-        # self.docbody.append(docx.table(fmted_rows))
         self.table = None
         self.table_style = self.table_style_default
 
@@ -709,26 +683,26 @@ class DocxTranslator(nodes.NodeVisitor):
         # But that code did not properly account for the level.
         # So merge these two attempts.
         #self.list_style.append('ListBullet')
-        self.new_state()
+        #self.new_state()
         self.list_level += 1
 
     def depart_bullet_list(self, node):
         dprint()
         #self.list_style.pop()
         self.list_level -= 1
-        self.end_state()
+        #self.end_state()
 
     def visit_enumerated_list(self, node):
         dprint()
         #self.list_style.append('ListNumber')
-        self.new_state()
+        #self.new_state()
         self.list_level += 1
 
     def depart_enumerated_list(self, node):
         dprint()
         #self.list_style.pop()
         self.list_level -= 1
-        self.end_state()
+        #self.end_state()
 
     def visit_definition_list(self, node):
         dprint()
@@ -742,20 +716,16 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_list_item(self, node):
         dprint()
-        # HB: Not sure a new state should be set here, since a new state
-        #     is now already set in visit_bullet_list.
-        self.new_state()
+        #self.new_state()
+
+        # A new paragraph is created here, but the next visit is to
+        # paragraph, so that would add another paragraph. That is
+        # prevented if current_paragraph is an empty List paragraph.
+        style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
+        self.current_paragraph = self.docbody.document.add_paragraph(style=style)
 
     def depart_list_item(self, node):
         dprint()
-        # HB: should this not use end_state() ?
-        text = ''.join(self.states.pop())
-        if text:
-            ## self.docbody.append(
-            ##        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-            self.current_paragraph = self.docbody.document.add_paragraph(text, style=style)
-
 
     def visit_definition_list_item(self, node):
         dprint()
@@ -923,18 +893,14 @@ class DocxTranslator(nodes.NodeVisitor):
         self.new_state()
         self.in_literal_block = True
 
+        # Unlike with Lists, there will not be a visit to paragraph in a
+        # literal block, so we *must* create the paragraph here.
+        style = 'Preformatted Text'
+        self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+        self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
     def depart_literal_block(self, node):
         dprint()
-        #self.end_state()
-        text = ''.join(self.states.pop())
-        if text:
-            ## self.docbody.append(
-            ##        docx.paragraph(text, self.list_style[-1], breakbefore=True))
-            style = 'Preformatted Text'
-            self.current_paragraph = self.docbody.document.add_paragraph(text, style=style)
-            self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            # self.current_paragraph.paragraph_format.left_indent = 0
-
         self.in_literal_block = False
 
     def visit_doctest_block(self, node):
@@ -984,16 +950,29 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_paragraph(self, node):
         dprint()
-        self.ensure_state()
-        # if not isinstance(node.parent, nodes.Admonition) or \
-        #        isinstance(node.parent, addnodes.seealso):
-        #     self.new_state()
+
+        curloc = self.current_location[-1]
+
+        if isinstance(curloc, _Cell):
+            if len(curloc.paragraphs):
+                if not curloc.paragraphs[0].text:
+                    # An empty paragraph is created when a Cell is created.
+                    # Reuse this paragraph.
+                    self.current_paragraph = curloc.paragraphs[0]
+                    # HACK because the style is messed up, TODO FIX
+                    self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    self.current_paragraph.paragraph_format.left_indent = 0
+                else:
+                    self.current_paragraph = self.current_location[-1].add_paragraph()
+        elif 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
+            # This is the first paragraph in a list item, so do not create another one.
+            pass
+        else:
+            self.current_paragraph = self.current_location[-1].add_paragraph()
+
 
     def depart_paragraph(self, node):
         dprint()
-        # if not isinstance(node.parent, nodes.Admonition) or \
-        #        isinstance(node.parent, addnodes.seealso):
-        #     self.end_state()
 
     def visit_target(self, node):
         dprint()
@@ -1034,10 +1013,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_emphasis(self, node):
         dprint()
         # self.add_text('*')
+        self.emphasis = True
 
     def depart_emphasis(self, node):
         dprint()
         # self.add_text('*')
+        self.emphasis = False
 
     def visit_literal_emphasis(self, node):
         dprint()
@@ -1050,10 +1031,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_strong(self, node):
         dprint()
         # self.add_text('**')
+        self.strong = True
 
     def depart_strong(self, node):
         dprint()
         # self.add_text('**')
+        self.strong = False
 
     def visit_abbreviation(self, node):
         dprint()
@@ -1110,7 +1093,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_Text(self, node):
         dprint()
-        #self.add_text(node.astext())
         text = node.astext()
         if not self.in_literal_block:
             # assert '\n\n' not in text, 'Found \n\n'
