@@ -1,0 +1,7 @@
+sphinx>=1.6.2
+python-docx>=0.8.6
+lxml
+Pillow>=4.0
+nose
+minimock
+pep8

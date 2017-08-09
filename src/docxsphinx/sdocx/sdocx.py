@@ -6,28 +6,33 @@ Part of Python's docx module - http://github.com/mikemaccana/python-docx
 See LICENSE for licensing information.
 """
 
-from lxml import etree
+#from lxml import etree
 from PIL import Image
-import zipfile
+#import zipfile
 import shutil
 import re
 import time
 import os
+import sys
 from os.path import join
+import docx
 
 # Record template directory's location which is just 'template' for a docx
 # developer or 'site-packages/docx-template' if you have installed docx
-TEMPLATE_DIR = join(os.path.dirname(__file__), 'docx-template')  # installed
-if not os.path.isdir(TEMPLATE_DIR):
-    TEMPLATE_DIR = join(os.path.dirname(__file__), 'template')  # dev
+#TEMPLATE_DIR = join(os.path.dirname(__file__), 'docx-template')  # installed
+#if not os.path.isdir(TEMPLATE_DIR):
+#    TEMPLATE_DIR = join(os.path.dirname(__file__), 'template')  # dev
+
+TEMPLATE_DIR = "NO"
 
 # FIXME: QUICK-HACK to prevent picture() from staining template directory.
 # temporary directory will create per module import.
 template_dir = TEMPLATE_DIR
 def set_template(template_path):
     global template_dir
-    template_dir = template_path
-    update_stylenames(join(template_dir, 'word', 'styles.xml'))
+#    template_dir = template_path
+#    update_stylenames(join(template_dir, 'word', 'styles.xml'))
+    template_dir = template_path  # Now contains full path to template.docx, not unzipped
 
 # END of QUICK-HACK
 
@@ -97,49 +102,57 @@ def norm_name(name, namespaces):
 
 
 def update_stylenames(style_file):
-    xmlcontent = open(style_file).read().encode()
-    xml = etree.fromstring(xmlcontent)
-    style_elems = xml.xpath('w:style', namespaces=nsprefixes)
-    for style_elem in style_elems:
-        aliases_elems = style_elem.xpath('w:aliases', namespaces=nsprefixes)
-        if aliases_elems:
-            name = aliases_elems[0].attrib[norm_name('w:val', nsprefixes)]
-        else:
-            name_elem = style_elem.xpath('w:name', namespaces=nsprefixes)[0]
-            name = name_elem.attrib[norm_name('w:val', nsprefixes)]
-        value = style_elem.attrib[norm_name('w:styleId', nsprefixes)]
-        stylenames[name] = value
-        print("### '%s' = '%s'" % (name, value))
+    #if sys.version_info.major == 2:
+    #    xmlcontent = open(style_file).read()
+    #else:
+    #    xmlcontent = open(style_file).read().encode()
+    #xml = etree.fromstring(xmlcontent)
+    #style_elems = xml.xpath('w:style', namespaces=nsprefixes)
+    #for style_elem in style_elems:
+    #    aliases_elems = style_elem.xpath('w:aliases', namespaces=nsprefixes)
+    #    if aliases_elems:
+    #        name = aliases_elems[0].attrib[norm_name('w:val', nsprefixes)]
+    #    else:
+    #        name_elem = style_elem.xpath('w:name', namespaces=nsprefixes)[0]
+    #        name = name_elem.attrib[norm_name('w:val', nsprefixes)]
+    #    value = style_elem.attrib[norm_name('w:styleId', nsprefixes)]
+    #    stylenames[name] = value
+    #    print("### '%s' = '%s'" % (name, value))
+    pass
 
 
-import tempfile
-temp_dir = tempfile.mkdtemp(prefix='docx-')
-os.rmdir(temp_dir)
-shutil.copytree(TEMPLATE_DIR, temp_dir)
-set_template(temp_dir)
+#import tempfile
+#temp_dir = tempfile.mkdtemp(prefix='docx-')
+#os.rmdir(temp_dir)
+#shutil.copytree(TEMPLATE_DIR, temp_dir)
+#set_template(temp_dir)
 # END of QUICK-HACK
 
 
 def opendocx(file):
     """
-    Open a docx file, return a document XML tree
-    .. todo:: add doc
-    :param file:
-    :return:
+    Open a docx file using the python-docx package
+
+    :param str file: the file name of the template
+    :return: docx.document.Document
     """
-    mydoc = zipfile.ZipFile(file)
-    xmlcontent = mydoc.read('word/document.xml').encode()
-    document = etree.fromstring(xmlcontent)
+    # mydoc = zipfile.ZipFile(file)
+    # xmlcontent = mydoc.read('word/document.xml').encode()
+    # document = etree.fromstring(xmlcontent)
+    # raise Exception, file
+    document = docx.Document('source/' + file)
     return document
 
 
 def newdocument():
     """
-    .. todo:: add doc
-    :return:
+    create a new document based on a template (either a dir or a .docx)
+
+    :return: docx.document.Document
     """
-    document = makeelement('document')
-    document.append(makeelement('body'))
+    # document = makeelement('document')
+    # document.append(makeelement('body'))
+    document = opendocx(template_dir)
     return document
 
 
@@ -257,6 +270,8 @@ def contenttypes():
     .. todo:: add doc
     :return:
     """
+    return []
+
     prev_dir = os.getcwd() # save previous working dir
     os.chdir(template_dir)
 
@@ -388,6 +403,8 @@ def picture(relationshiplist,
     :param nochangeaspect:
     :param nochangearrowheads:
     :return: """
+    return (None,None)
+
     # http://openxmldeveloper.org/articles/462.aspx
     # Create an image. Size may be specified, otherwise it will based on the
     # pixel size of image. Return a paragraph containing the picture'''  
