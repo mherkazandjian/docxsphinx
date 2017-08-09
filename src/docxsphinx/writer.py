@@ -9,6 +9,7 @@
         Copyright 2010 by shimizukawa at gmail dot com (Sphinx-users.jp).
     :license: BSD, see LICENSE for details.
 """
+from __future__ import division
 import os
 import sys
 import zipfile
@@ -556,7 +557,7 @@ class DocxTranslator(nodes.NodeVisitor):
             self.column_widths = self.column_widths[1:]
             col = self.table.add_column(Cm(width))
         else:
-            col = self.table.add_column(self.docbody.document._block_width / self.ncolumns)
+            col = self.table.add_column(self.docbody.document._block_width // self.ncolumns)
 
         raise nodes.SkipNode
 
