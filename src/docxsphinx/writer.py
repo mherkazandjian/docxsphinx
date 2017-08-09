@@ -959,11 +959,13 @@ class DocxTranslator(nodes.NodeVisitor):
                     # An empty paragraph is created when a Cell is created.
                     # Reuse this paragraph.
                     self.current_paragraph = curloc.paragraphs[0]
-                    # HACK because the style is messed up, TODO FIX
-                    self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    self.current_paragraph.paragraph_format.left_indent = 0
                 else:
                     self.current_paragraph = self.current_location[-1].add_paragraph()
+            else:
+                self.current_paragraph = self.current_location[-1].add_paragraph()
+            # HACK because the style is messed up, TODO FIX
+            self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            self.current_paragraph.paragraph_format.left_indent = 0
         elif 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
             # This is the first paragraph in a list item, so do not create another one.
             pass
