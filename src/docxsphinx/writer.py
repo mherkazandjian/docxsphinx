@@ -47,6 +47,7 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
+# noinspection PyClassicStyleClass
 class DocxWriter(writers.Writer):
     """docutil writer class for docx files"""
     supported = ('docx',)
@@ -83,7 +84,7 @@ class DocxWriter(writers.Writer):
         self.output = ''  # visitor.body
 
 
-# noinspection PyMethodMayBeStatic
+# noinspection PyClassicStyleClass
 class DocxTranslator(nodes.NodeVisitor):
     """Visitor class to create docx content."""
 
@@ -631,14 +632,13 @@ class DocxTranslator(nodes.NodeVisitor):
         # self.add_text(', '.join(n.astext() for n in node.children[0].children)
         #               + '.')
         # self.end_state()
-        raise nodes.SkipNode
 
     def visit_image(self, node):
         dprint()
-        return
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
         # TODO implement this.
+        return
 
     def depart_image(self, node):
         dprint()
@@ -695,8 +695,8 @@ class DocxTranslator(nodes.NodeVisitor):
         # A new paragraph is created here, but the next visit is to
         # paragraph, so that would add another paragraph. That is
         # prevented if current_paragraph is an empty List paragraph.
+        style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
         try:
-            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
             self.current_paragraph = self.docx_container.add_paragraph(style=style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
