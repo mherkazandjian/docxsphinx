@@ -50,10 +50,6 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
-class DocxContaner(object):
-    pass
-
-
 class DocxWriter(writers.Writer):
     supported = ('docx',)
     settings_spec = ('No options here.', '', ())
@@ -67,11 +63,10 @@ class DocxWriter(writers.Writer):
         self.builder = builder
         self.template_setup()  # setup before call almost docx methods.
 
-        dc = DocxContaner()
         if self.template_dir == "NO":
-            dc.document = Document()
+            dc = Document()
         else:
-            dc.document = Document(os.path.join('source', self.template_dir))
+            dc = Document(os.path.join('source', self.template_dir))
         self.docx_container = dc
 
     def template_setup(self):
@@ -81,8 +76,7 @@ class DocxWriter(writers.Writer):
             self.template_dir = dotx
 
     def save(self, filename):
-        dc = self.docx_container
-        dc.document.save(filename)
+        self.docx_container.save(filename)
 
     def translate(self):
         visitor = DocxTranslator(
@@ -96,7 +90,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def __init__(self, document, builder, docx_container):
         self.builder = builder
         self.docx_container = docx_container
-        self.docbody = docx_container
         nodes.NodeVisitor.__init__(self, document)
 
         self.states = [[]]
@@ -116,7 +109,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Self.current_location store places where paragraphs will be added, e.g.
         # typically [document, table-cell]
-        self.current_location = [self.docbody.document]
+        self.current_location = [self.docx_container]
 
         self.ncolumns = 1
         "Number of columns in the current table."
@@ -529,7 +522,7 @@ class DocxTranslator(nodes.NodeVisitor):
             self.column_widths = self.column_widths[1:]
             col = self.table.add_column(Cm(width))
         else:
-            col = self.table.add_column(self.docbody.document._block_width // self.ncolumns)
+            col = self.table.add_column(self.docx_container._block_width // self.ncolumns)
 
         raise nodes.SkipNode
 
@@ -628,7 +621,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Add an empty paragraph to prevent tables from being concatenated.
         # TODO: Figure out some better solution.
-        self.docbody.document.add_paragraph("")
+        self.docx_container.add_paragraph("")
         self.end_state()
 
     def visit_acks(self, node):
@@ -704,12 +697,12 @@ class DocxTranslator(nodes.NodeVisitor):
         # prevented if current_paragraph is an empty List paragraph.
         try:
             style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
                    'using no style').format(style, repr(exc))
             logger.warning(msg)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=None)
+            self.current_paragraph = self.docx_container.add_paragraph(style=None)
 
     def depart_list_item(self, node):
         dprint()
@@ -886,13 +879,13 @@ class DocxTranslator(nodes.NodeVisitor):
         # literal block, so we *must* create the paragraph here.
         try:
             style = 'Preformatted Text'
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
                    'using no style').format(self.table_style, repr(exc))
             logger.warning(msg)
             style = None
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
 
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
