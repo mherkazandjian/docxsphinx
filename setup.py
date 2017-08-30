@@ -38,10 +38,7 @@ setup(
      include_package_data=True,
      install_requires=[
         'Sphinx',
-        #'docx',  # docx is included this package
-        # -*- Extra requirements: -*-
-        'lxml',  # required by docx
-        'pillow',  # required by docx
+        'python-docx',
      ],
      extras_require=dict(
          test=[
