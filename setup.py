@@ -46,11 +46,9 @@ setup(
      extras_require=dict(
          test=[
              'Nose',
-             'minimock',
-             'pep8',
          ],
      ),
      test_suite='nose.collector',
-     tests_require=['Nose', 'minimock', 'pep8'],
+     tests_require=['Nose'],
      zip_safe=False,
 )
