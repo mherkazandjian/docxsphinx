@@ -615,16 +615,17 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Columns are added when a colspec is visited.
         try:
-            self.table = self.current_location[-1].add_table(
-                rows=0, cols=0, style=self.table_style
-            )
+            # It is only possible to use a style in add_table when adding a
+            # table to the root document. That is, not for a table in a table.
+            if len(self.current_location) > 1:
+                self.table = self.current_location[-1].add_table(rows=0, cols=0)
+            else:
+                self.table = self.current_location[-1].add_table(rows=0, cols=0, style=self.table_style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
                    'using no style').format(self.table_style, repr(exc))
             logger.warning(msg)
-            self.table = self.current_location[-1].add_table(
-                rows=0, cols=0, style=None
-            )
+            self.table = self.current_location[-1].add_table(rows=0, cols=0)
 
     def depart_table(self, node):
         dprint()
