@@ -15,6 +15,7 @@ import sys
 
 # noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Cm
 # noinspection PyProtectedMember
 from docx.table import _Cell
@@ -161,10 +162,12 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         self.old_states.append(self.current_state)
         self.current_state = DocxState(location=location)
+        print("HB new_state: {}".format(len(self.old_states)))
 
     def end_state(self, first=None):
         dprint()
         self.current_state = self.old_states.pop()
+        print("HB old_state: {}".format(len(self.old_states)))
 
     def visit_start_of_file(self, node):
         dprint()
@@ -592,20 +595,24 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_table(self, node):
         dprint()
 
-        # Columns are added when a colspec is visited.
+        style = self.current_state.table_style
         try:
-            # It is only possible to use a style in add_table when adding a
-            # table to the root document. That is, not for a table in a table.
-            if len(self.old_states):
-                self.current_state.table = self.current_state.location.add_table(rows=0, cols=0)
-            else:
-                self.current_state.table = self.current_state.location.add_table(
-                    rows=0, cols=0, style=self.current_state.table_style)
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.TABLE)
         except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(self.current_state.table_style, repr(exc))
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
+            style = None
+
+        # Columns are added when a colspec is visited.
+
+        # It is only possible to use a style in add_table when adding a
+        # table to the root document. That is, not for a table in a table.
+        if len(self.old_states):
             self.current_state.table = self.current_state.location.add_table(rows=0, cols=0)
+        else:
+            self.current_state.table = self.current_state.location.add_table(
+                rows=0, cols=0, style=style)
 
     def depart_table(self, node):
         dprint()
@@ -679,12 +686,33 @@ class DocxTranslator(nodes.NodeVisitor):
         # prevented if current_paragraph is an empty List paragraph.
         style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
         try:
-            self.current_paragraph = self.docx_container.add_paragraph(style=style)
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(style, repr(exc))
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
-            self.current_paragraph = self.docx_container.add_paragraph(style=None)
+            style = None
+
+        curloc = self.current_state.location
+        if isinstance(curloc, _Cell):
+            if len(curloc.paragraphs) == 1:
+                if not curloc.paragraphs[0].text:
+                    # An empty paragraph is created when a Cell is created.
+                    # Reuse this paragraph.
+                    print("HB VLI reuse {}".format(style))
+                    self.current_paragraph = curloc.paragraphs[0]
+                    self.current_paragraph.style = style
+                else:
+                    print("HB VLI create 1 {}".format(style))
+                    self.current_paragraph = curloc.add_paragraph(style=style)
+            else:
+                print("HB VLI create 2 {}".format(style))
+                self.current_paragraph = curloc.add_paragraph(style=style)
+        else:
+            print("HB VLI create 3 {}".format(style))
+            self.current_paragraph = curloc.add_paragraph(style=style)
+
+        print("HB VLI end {}".format(self.current_paragraph.style))
 
     def depart_list_item(self, node):
         dprint()
@@ -834,14 +862,14 @@ class DocxTranslator(nodes.NodeVisitor):
         # literal block, so we *must* create the paragraph here.
         style = 'Preformatted Text'
         try:
-            self.current_paragraph = self.docx_container.add_paragraph(style=style)
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(style, repr(exc))
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
             style = None
-            self.current_paragraph = self.docx_container.add_paragraph(style=style)
 
+        self.current_paragraph = self.current_state.location.add_paragraph(style=style)
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     def depart_literal_block(self, node):
@@ -889,24 +917,31 @@ class DocxTranslator(nodes.NodeVisitor):
 
         curloc = self.current_state.location
 
-        if isinstance(curloc, _Cell):
-            if len(curloc.paragraphs):
+        if 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
+            print("HB VP List")
+            # This is the first paragraph in a list item, so do not create another one.
+            pass
+        elif isinstance(curloc, _Cell):
+            if len(curloc.paragraphs) == 1:
                 if not curloc.paragraphs[0].text:
                     # An empty paragraph is created when a Cell is created.
                     # Reuse this paragraph.
                     self.current_paragraph = curloc.paragraphs[0]
+                    print("HB VP cell reuse")
                 else:
                     self.current_paragraph = curloc.add_paragraph()
+                    print("HB VP cell create 1")
             else:
                 self.current_paragraph = curloc.add_paragraph()
+                print("HB VP cell create 2")
             # HACK because the style is messed up, TODO FIX
             self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
             self.current_paragraph.paragraph_format.left_indent = 0
-        elif 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
-            # This is the first paragraph in a list item, so do not create another one.
-            pass
         else:
+            print("HB VP normal")
             self.current_paragraph = curloc.add_paragraph()
+
+        print("HB VP end {}".format(self.current_paragraph.style))
 
     def depart_paragraph(self, node):
         dprint()
