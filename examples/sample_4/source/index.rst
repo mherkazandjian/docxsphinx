@@ -11,7 +11,7 @@ A normal table.
 +-------+-------+
 | Hello | There |
 +-------+-------+
-| World | !!!!! |
+| World | Q     |
 +-------+-------+
 
 Table 2
@@ -59,3 +59,25 @@ A multicol table with a multicol table
 |       | |AB   |     |
 |       | +--+--+     |
 +-------+-------------+
+
+List 1
+------
+
+A normal list
+
+ * Hello
+ * World
+
+
+List 2
+------
+
+A table in a list
+
+ * Hello
+ * +-------+-------+
+   | Hello | There |
+   +-------+-------+
+   | World | Q     |
+   +-------+-------+
+ * There
