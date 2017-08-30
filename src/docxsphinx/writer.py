@@ -12,9 +12,6 @@
 from __future__ import division
 import os
 import sys
-import zipfile
-import tempfile
-import re
 
 # noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -23,9 +20,6 @@ from docx.table import _Cell
 from docx import Document
 
 from docutils import nodes, writers
-
-from sphinx import addnodes
-from sphinx.locale import admonitionlabels, versionlabels, _
 
 import logging
 logging.basicConfig(
@@ -887,6 +881,7 @@ class DocxTranslator(nodes.NodeVisitor):
         def depart_admonition(self, node):
             dprint()
             raise nodes.SkipNode
+            # from sphinx.locale import admonitionlabels, versionlabels, _
             # self.end_state(first=admonitionlabels[name] + ': ')
         return depart_admonition
 
@@ -912,6 +907,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
+        # from sphinx.locale import admonitionlabels, versionlabels, _
         # self.new_state()
         # if node.children:
         #     self.add_text(
