@@ -1,3 +1,4 @@
 sphinx>=1.6.2
 python-docx>=0.8.6
+docx>=0.8.6
 nose
