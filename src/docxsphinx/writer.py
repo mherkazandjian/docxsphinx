@@ -48,6 +48,7 @@ def dprint(_func=None, **kw):
 
 
 class DocxWriter(writers.Writer):
+    """docutil writer class for docx files"""
     supported = ('docx',)
     settings_spec = ('No options here.', '', ())
     settings_defaults = {}
@@ -82,7 +83,9 @@ class DocxWriter(writers.Writer):
         self.output = ''  # visitor.body
 
 
+# noinspection PyMethodMayBeStatic
 class DocxTranslator(nodes.NodeVisitor):
+    """Visitor class to create docx content."""
 
     def __init__(self, document, builder, docx_container):
         self.builder = builder
