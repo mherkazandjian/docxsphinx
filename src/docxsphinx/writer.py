@@ -93,7 +93,7 @@ class DocxWriter(writers.Writer):
         self.output = ''  # visitor.body
 
 
-# noinspection PyClassicStyleClass
+# noinspection PyClassicStyleClass,PyMissingOrEmptyDocstring,PyUnusedLocal
 class DocxTranslator(nodes.NodeVisitor):
     """Visitor class to create docx content."""
 
