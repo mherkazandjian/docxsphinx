@@ -42,3 +42,20 @@ A table with a table
 |       | |A |B | |
 |       | +--+--+ |
 +-------+---------+
+
+Table 4
+-------
+
+A multicol table with a multicol table
+
+.. Hack to get tablestyle: DocxTableStyle Table Grid
+
++-------+---------+---+
+| Hello | There   | H |
++-------+---------+---+
+| World | +--+--+     |
+|       | |A |B |     |
+|       | +--+--+     |
+|       | |AB   |     |
+|       | +--+--+     |
++-------+-------------+
