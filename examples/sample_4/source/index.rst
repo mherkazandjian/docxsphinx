@@ -6,6 +6,8 @@ Table 1
 
 A normal table.
 
+.. Hack to get tablestyle: DocxTableStyle Table Grid
+
 +-------+-------+
 | Hello | There |
 +-------+-------+
@@ -16,6 +18,8 @@ Table 2
 -------
 
 A table with a list
+
+.. Hack to get tablestyle: DocxTableStyle Table Grid
 
 +-------+-------+
 | Hello | There |
@@ -28,6 +32,8 @@ Table 3
 -------
 
 A table with a table
+
+.. Hack to get tablestyle: DocxTableStyle Table Grid
 
 +-------+---------+
 | Hello | There   |
