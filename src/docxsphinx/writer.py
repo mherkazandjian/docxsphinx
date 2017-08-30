@@ -47,6 +47,15 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
+def _make_depart_admonition(name):
+    def depart_admonition(self, node):
+        dprint()
+        raise nodes.SkipNode
+        # from sphinx.locale import admonitionlabels, versionlabels, _
+        # self.end_state(first=admonitionlabels[name] + ': ')
+    return depart_admonition
+
+
 # noinspection PyClassicStyleClass
 class DocxWriter(writers.Writer):
     """docutil writer class for docx files"""
@@ -823,14 +832,6 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         raise nodes.SkipNode
         # self.new_state()
-
-    def _make_depart_admonition(name):
-        def depart_admonition(self, node):
-            dprint()
-            raise nodes.SkipNode
-            # from sphinx.locale import admonitionlabels, versionlabels, _
-            # self.end_state(first=admonitionlabels[name] + ': ')
-        return depart_admonition
 
     visit_attention = _visit_admonition
     depart_attention = _make_depart_admonition('attention')
