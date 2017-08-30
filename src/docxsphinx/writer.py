@@ -31,26 +31,6 @@ logging.basicConfig(
 logger = logging.getLogger('docx')
 
 
-# Record template directory's location which is just 'template' for a docx
-# developer or 'site-packages/docx-template' if you have installed docx
-#TEMPLATE_DIR = join(os.path.dirname(__file__), 'docx-template')  # installed
-#if not os.path.isdir(TEMPLATE_DIR):
-#    TEMPLATE_DIR = join(os.path.dirname(__file__), 'template')  # dev
-
-TEMPLATE_DIR = "NO"
-
-# FIXME: QUICK-HACK to prevent picture() from staining template directory.
-# temporary directory will create per module import.
-template_dir = TEMPLATE_DIR
-def docx_set_template(template_path):
-    global template_dir
-#    template_dir = template_path
-#    update_stylenames(join(template_dir, 'word', 'styles.xml'))
-    template_dir = template_path  # Now contains full path to template.docx, not unzipped
-
-# END of QUICK-HACK
-
-
 def dprint(_func=None, **kw):
     logger.info('-'*50)
     f = sys._getframe(1)
@@ -70,36 +50,6 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
-def docx_opendocx(fname):
-    """
-    Open a docx file using the python-docx package
-
-    :param str fname: the file name of the template
-    :return: docx.Document
-    """
-    # mydoc = zipfile.ZipFile(file)
-    # xmlcontent = mydoc.read('word/document.xml').encode()
-    # document = etree.fromstring(xmlcontent)
-    # raise Exception, file
-    if fname == 'NO':
-        document = Document()
-    else:
-        document = Document(os.path.join('source', fname))
-    return document
-
-
-def docx_newdocument():
-    """
-    create a new document based on a template (either a dir or a .docx)
-
-    :return: docx.Document
-    """
-    # document = makeelement('document')
-    # document.append(makeelement('body'))
-    document = docx_opendocx(template_dir)
-    return document
-
-
 class DocxContaner(object):
     pass
 
@@ -110,6 +60,7 @@ class DocxWriter(writers.Writer):
     settings_defaults = {}
 
     output = None
+    template_dir = "NO"
 
     def __init__(self, builder):
         writers.Writer.__init__(self)
@@ -117,14 +68,17 @@ class DocxWriter(writers.Writer):
         self.template_setup()  # setup before call almost docx methods.
 
         dc = DocxContaner()
-        dc.document = docx_newdocument()
+        if self.template_dir == "NO":
+            dc.document = Document()
+        else:
+            dc.document = Document(os.path.join('source', self.template_dir))
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
             logger.info("MK using template {}".format(dotx))
-            docx_set_template(dotx)
+            self.template_dir = dotx
 
     def save(self, filename):
         dc = self.docx_container
