@@ -585,6 +585,10 @@ class DocxTranslator(nodes.NodeVisitor):
                 cell = cell.merge(self.current_state.row.cells[self.current_state.cell_counter + i + 1])
 
         self.new_state(location=cell)
+        # For some annoying reason, a new paragraph is automatically added
+        # to each table cell. This is frustrating when you want, e.g. to
+        # add a list item instead of a normal paragraph.
+        self.current_paragraph = cell.paragraphs[0]
 
     def depart_entry(self, node):
         dprint()
