@@ -27,8 +27,6 @@ from docutils import nodes, writers
 from sphinx import addnodes
 from sphinx.locale import admonitionlabels, versionlabels, _
 
-# from docxsphinx import sdocx as docx
-
 import logging
 logging.basicConfig(
     filename='docx.log',
@@ -83,7 +81,7 @@ def docx_opendocx(fname):
     Open a docx file using the python-docx package
 
     :param str fname: the file name of the template
-    :return: docx.document.Document
+    :return: docx.Document
     """
     # mydoc = zipfile.ZipFile(file)
     # xmlcontent = mydoc.read('word/document.xml').encode()
@@ -100,7 +98,7 @@ def docx_newdocument():
     """
     create a new document based on a template (either a dir or a .docx)
 
-    :return: docx.document.Document
+    :return: docx.Document
     """
     # document = makeelement('document')
     # document.append(makeelement('body'))
@@ -126,35 +124,16 @@ class DocxWriter(writers.Writer):
 
         dc = DocxContaner()
         dc.document = docx_newdocument()
-        # dc.docbody = dc.document.xpath(
-        #         '/w:document/w:body', namespaces=docx.nsprefixes)[0]
-        # dc.relationships = docx.relationshiplist()
-        # dc.appprops = docx.appproperties()
-        # dc.contenttypes = docx.contenttypes()
-        # dc.websettings = docx.websettings()
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
-            # dotx = os.path.join(self.builder.env.srcdir, dotx)
-            # z = zipfile.ZipFile(dotx, 'r')
-            # template_dir = tempfile.mkdtemp(prefix='docx-')
-            # z.extractall(template_dir)
-            # docx.set_template(template_dir)
             logger.info("MK using template {}".format(dotx))
             docx_set_template(dotx)
 
     def save(self, filename):
         dc = self.docx_container
-        # wordrelationships = docx.wordrelationships(dc.relationships)
-        # coreprops = docx.coreproperties(
-        #         title='Python docx demo',
-        #         subject='A practical example of making docx from Python',
-        #         creator='Mike MacCana',
-        #         keywords=['python', 'Office Open XML', 'Word'])
-        # docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
-        #         dc.websettings, wordrelationships, filename)
         dc.document.save(filename)
 
     def translate(self):
@@ -169,7 +148,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def __init__(self, document, builder, docx_container):
         self.builder = builder
         self.docx_container = docx_container
-        #self.docbody = docx_container.docbody
         self.docbody = docx_container
         nodes.NodeVisitor.__init__(self, document)
 
@@ -232,10 +210,6 @@ class DocxTranslator(nodes.NodeVisitor):
         # This quick hack reset sectionlevel per file.
         # (BTW Sphinx has heading levels per file? or entire document?)
         self.sectionlevel = 0
-
-        # HB: I believe this is all wrong, who cares about files?
-        #self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
-        #self.docbody.document.add_page_break()
 
     def depart_start_of_file(self, node):
         dprint()
@@ -723,10 +697,7 @@ class DocxTranslator(nodes.NodeVisitor):
         return
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
-        # dc = self.docx_container
-        # dc.relationships, picpara = docx.picture(
-        #         dc.relationships, file_path, '')
-        # self.docbody.append(picpara)
+        # TODO implement this.
 
     def depart_image(self, node):
         dprint()
