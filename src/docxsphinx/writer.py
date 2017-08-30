@@ -37,12 +37,9 @@ def dprint(_func=None, **kw):
     if kw:
         text = ', '.join('%s = %s' % (k, v) for k, v in kw.items())
     else:
-        try:
-            text = dict((k, repr(v)) for k, v in f.f_locals.items()
+        text = dict((k, repr(v)) for k, v in f.f_locals.items()
                         if k != 'self')
-            text = unicode(text)
-        except:
-            text = ''
+        text = str(text)
 
     if _func is None:
         _func = f.f_code.co_name
