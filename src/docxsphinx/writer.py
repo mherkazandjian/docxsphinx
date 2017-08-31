@@ -12,21 +12,14 @@
 from __future__ import division
 import os
 import sys
-import zipfile
-import tempfile
-import re
 
 # noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm
 from docx.table import _Cell
+from docx import Document
 
 from docutils import nodes, writers
-
-from sphinx import addnodes
-from sphinx.locale import admonitionlabels, versionlabels, _
-
-from docxsphinx import sdocx as docx
 
 import logging
 logging.basicConfig(
@@ -38,19 +31,15 @@ logging.basicConfig(
 logger = logging.getLogger('docx')
 
 
-
 def dprint(_func=None, **kw):
     logger.info('-'*50)
     f = sys._getframe(1)
     if kw:
         text = ', '.join('%s = %s' % (k, v) for k, v in kw.items())
     else:
-        try:
-            text = dict((k, repr(v)) for k, v in f.f_locals.items()
+        text = dict((k, repr(v)) for k, v in f.f_locals.items()
                         if k != 'self')
-            text = unicode(text)
-        except:
-            text = ''
+        text = str(text)
 
     if _func is None:
         _func = f.f_code.co_name
@@ -58,54 +47,44 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
-class DocxContaner(object):
-    pass
+def _make_depart_admonition(name):
+    def depart_admonition(self, node):
+        dprint()
+        raise nodes.SkipNode
+        # from sphinx.locale import admonitionlabels, versionlabels, _
+        # self.end_state(first=admonitionlabels[name] + ': ')
+    return depart_admonition
 
 
+# noinspection PyClassicStyleClass
 class DocxWriter(writers.Writer):
+    """docutil writer class for docx files"""
     supported = ('docx',)
     settings_spec = ('No options here.', '', ())
     settings_defaults = {}
 
     output = None
+    template_dir = "NO"
 
     def __init__(self, builder):
         writers.Writer.__init__(self)
         self.builder = builder
         self.template_setup()  # setup before call almost docx methods.
 
-        dc = DocxContaner()
-        dc.document = docx.newdocument()
-        # dc.docbody = dc.document.xpath(
-        #         '/w:document/w:body', namespaces=docx.nsprefixes)[0]
-        # dc.relationships = docx.relationshiplist()
-        # dc.appprops = docx.appproperties()
-        # dc.contenttypes = docx.contenttypes()
-        # dc.websettings = docx.websettings()
+        if self.template_dir == "NO":
+            dc = Document()
+        else:
+            dc = Document(os.path.join('source', self.template_dir))
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
-            # dotx = os.path.join(self.builder.env.srcdir, dotx)
-            # z = zipfile.ZipFile(dotx, 'r')
-            # template_dir = tempfile.mkdtemp(prefix='docx-')
-            # z.extractall(template_dir)
-            # docx.set_template(template_dir)
             logger.info("MK using template {}".format(dotx))
-            docx.set_template(dotx)
+            self.template_dir = dotx
 
     def save(self, filename):
-        dc = self.docx_container
-        # wordrelationships = docx.wordrelationships(dc.relationships)
-        # coreprops = docx.coreproperties(
-        #         title='Python docx demo',
-        #         subject='A practical example of making docx from Python',
-        #         creator='Mike MacCana',
-        #         keywords=['python', 'Office Open XML', 'Word'])
-        # docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
-        #         dc.websettings, wordrelationships, filename)
-        dc.document.save(filename)
+        self.docx_container.save(filename)
 
     def translate(self):
         visitor = DocxTranslator(
@@ -114,13 +93,13 @@ class DocxWriter(writers.Writer):
         self.output = ''  # visitor.body
 
 
+# noinspection PyClassicStyleClass
 class DocxTranslator(nodes.NodeVisitor):
+    """Visitor class to create docx content."""
 
     def __init__(self, document, builder, docx_container):
         self.builder = builder
         self.docx_container = docx_container
-        #self.docbody = docx_container.docbody
-        self.docbody = docx_container
         nodes.NodeVisitor.__init__(self, document)
 
         self.states = [[]]
@@ -140,7 +119,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Self.current_location store places where paragraphs will be added, e.g.
         # typically [document, table-cell]
-        self.current_location = [self.docbody.document]
+        self.current_location = [self.docx_container]
 
         self.ncolumns = 1
         "Number of columns in the current table."
@@ -182,10 +161,6 @@ class DocxTranslator(nodes.NodeVisitor):
         # This quick hack reset sectionlevel per file.
         # (BTW Sphinx has heading levels per file? or entire document?)
         self.sectionlevel = 0
-
-        # HB: I believe this is all wrong, who cares about files?
-        #self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
-        #self.docbody.document.add_page_break()
 
     def depart_start_of_file(self, node):
         dprint()
@@ -557,7 +532,7 @@ class DocxTranslator(nodes.NodeVisitor):
             self.column_widths = self.column_widths[1:]
             col = self.table.add_column(Cm(width))
         else:
-            col = self.table.add_column(self.docbody.document._block_width // self.ncolumns)
+            col = self.table.add_column(self.docx_container._block_width // self.ncolumns)
 
         raise nodes.SkipNode
 
@@ -656,7 +631,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Add an empty paragraph to prevent tables from being concatenated.
         # TODO: Figure out some better solution.
-        self.docbody.document.add_paragraph("")
+        self.docx_container.add_paragraph("")
         self.end_state()
 
     def visit_acks(self, node):
@@ -666,17 +641,13 @@ class DocxTranslator(nodes.NodeVisitor):
         # self.add_text(', '.join(n.astext() for n in node.children[0].children)
         #               + '.')
         # self.end_state()
-        raise nodes.SkipNode
 
     def visit_image(self, node):
         dprint()
-        return
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
-        dc = self.docx_container
-        dc.relationships, picpara = docx.picture(
-                dc.relationships, file_path, '')
-        self.docbody.append(picpara)
+        # TODO implement this.
+        return
 
     def depart_image(self, node):
         dprint()
@@ -733,14 +704,14 @@ class DocxTranslator(nodes.NodeVisitor):
         # A new paragraph is created here, but the next visit is to
         # paragraph, so that would add another paragraph. That is
         # prevented if current_paragraph is an empty List paragraph.
+        style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
         try:
-            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
                    'using no style').format(style, repr(exc))
             logger.warning(msg)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=None)
+            self.current_paragraph = self.docx_container.add_paragraph(style=None)
 
     def depart_list_item(self, node):
         dprint()
@@ -862,13 +833,6 @@ class DocxTranslator(nodes.NodeVisitor):
         raise nodes.SkipNode
         # self.new_state()
 
-    def _make_depart_admonition(name):
-        def depart_admonition(self, node):
-            dprint()
-            raise nodes.SkipNode
-            # self.end_state(first=admonitionlabels[name] + ': ')
-        return depart_admonition
-
     visit_attention = _visit_admonition
     depart_attention = _make_depart_admonition('attention')
     visit_caution = _visit_admonition
@@ -891,6 +855,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
+        # from sphinx.locale import admonitionlabels, versionlabels, _
         # self.new_state()
         # if node.children:
         #     self.add_text(
@@ -915,13 +880,13 @@ class DocxTranslator(nodes.NodeVisitor):
         # literal block, so we *must* create the paragraph here.
         try:
             style = 'Preformatted Text'
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
         except KeyError as exc:
             msg = ('looks like style "{}" is missing\n{}\n'
                    'using no style').format(self.table_style, repr(exc))
             logger.warning(msg)
             style = None
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            self.current_paragraph = self.docx_container.add_paragraph(style=style)
 
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
