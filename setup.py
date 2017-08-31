@@ -38,19 +38,14 @@ setup(
      include_package_data=True,
      install_requires=[
         'Sphinx',
-        #'docx',  # docx is included this package
-        # -*- Extra requirements: -*-
-        'lxml',  # required by docx
-        'pillow',  # required by docx
+        'python-docx',
      ],
      extras_require=dict(
          test=[
              'Nose',
-             'minimock',
-             'pep8',
          ],
      ),
      test_suite='nose.collector',
-     tests_require=['Nose', 'minimock', 'pep8'],
+     tests_require=['Nose'],
      zip_safe=False,
 )

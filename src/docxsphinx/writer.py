@@ -12,21 +12,16 @@
 from __future__ import division
 import os
 import sys
-import zipfile
-import tempfile
-import re
 
 # noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Cm
+# noinspection PyProtectedMember
 from docx.table import _Cell
+from docx import Document
 
 from docutils import nodes, writers
-
-from sphinx import addnodes
-from sphinx.locale import admonitionlabels, versionlabels, _
-
-from docxsphinx import sdocx as docx
 
 import logging
 logging.basicConfig(
@@ -38,19 +33,16 @@ logging.basicConfig(
 logger = logging.getLogger('docx')
 
 
-
 def dprint(_func=None, **kw):
+    """Print debug information."""
     logger.info('-'*50)
+    # noinspection PyProtectedMember
     f = sys._getframe(1)
     if kw:
         text = ', '.join('%s = %s' % (k, v) for k, v in kw.items())
     else:
-        try:
-            text = dict((k, repr(v)) for k, v in f.f_locals.items()
-                        if k != 'self')
-            text = unicode(text)
-        except:
-            text = ''
+        text = dict((k, repr(v)) for k, v in f.f_locals.items() if k != 'self')
+        text = str(text)
 
     if _func is None:
         _func = f.f_code.co_name
@@ -58,54 +50,45 @@ def dprint(_func=None, **kw):
     logger.info(' '.join([_func, text]))
 
 
-class DocxContaner(object):
-    pass
+# noinspection PyUnusedLocal
+def _make_depart_admonition(name):
+    # noinspection PyMissingOrEmptyDocstring,PyUnusedLocal
+    def depart_admonition(self, node):
+        dprint()
+        raise nodes.SkipNode
+        # from sphinx.locale import admonitionlabels, versionlabels, _
+    return depart_admonition
 
 
+# noinspection PyClassicStyleClass,PyMissingOrEmptyDocstring
 class DocxWriter(writers.Writer):
+    """docutil writer class for docx files"""
     supported = ('docx',)
     settings_spec = ('No options here.', '', ())
     settings_defaults = {}
 
     output = None
+    template_dir = "NO"
 
     def __init__(self, builder):
         writers.Writer.__init__(self)
         self.builder = builder
         self.template_setup()  # setup before call almost docx methods.
 
-        dc = DocxContaner()
-        dc.document = docx.newdocument()
-        # dc.docbody = dc.document.xpath(
-        #         '/w:document/w:body', namespaces=docx.nsprefixes)[0]
-        # dc.relationships = docx.relationshiplist()
-        # dc.appprops = docx.appproperties()
-        # dc.contenttypes = docx.contenttypes()
-        # dc.websettings = docx.websettings()
+        if self.template_dir == "NO":
+            dc = Document()
+        else:
+            dc = Document(os.path.join('source', self.template_dir))
         self.docx_container = dc
 
     def template_setup(self):
         dotx = self.builder.config['docx_template']
         if dotx:
-            # dotx = os.path.join(self.builder.env.srcdir, dotx)
-            # z = zipfile.ZipFile(dotx, 'r')
-            # template_dir = tempfile.mkdtemp(prefix='docx-')
-            # z.extractall(template_dir)
-            # docx.set_template(template_dir)
             logger.info("MK using template {}".format(dotx))
-            docx.set_template(dotx)
+            self.template_dir = dotx
 
     def save(self, filename):
-        dc = self.docx_container
-        # wordrelationships = docx.wordrelationships(dc.relationships)
-        # coreprops = docx.coreproperties(
-        #         title='Python docx demo',
-        #         subject='A practical example of making docx from Python',
-        #         creator='Mike MacCana',
-        #         keywords=['python', 'Office Open XML', 'Word'])
-        # docx.savedocx(dc.document, coreprops, dc.appprops, dc.contenttypes,
-        #         dc.websettings, wordrelationships, filename)
-        dc.document.save(filename)
+        self.docx_container.save(filename)
 
     def translate(self):
         visitor = DocxTranslator(
@@ -114,67 +97,82 @@ class DocxWriter(writers.Writer):
         self.output = ''  # visitor.body
 
 
+class DocxState(object):
+    """
+    DocxState class keeps track of which part of the document is being worked on.
+
+    In particular it is used to allow lists in tables.
+    """
+    def __init__(self, location=None):
+        self.location = location
+        self.table = None
+        self.column_widths = None
+        self.table_style = None
+        self.more_cols = 0
+        self.row = None
+        self.cell_counter = 0
+        self.ncolumns = 1
+        "Number of columns in the current table."
+
+
+# noinspection PyClassicStyleClass,PyMissingOrEmptyDocstring,PyUnusedLocal
 class DocxTranslator(nodes.NodeVisitor):
+    """Visitor class to create docx content."""
 
     def __init__(self, document, builder, docx_container):
         self.builder = builder
         self.docx_container = docx_container
-        #self.docbody = docx_container.docbody
-        self.docbody = docx_container
         nodes.NodeVisitor.__init__(self, document)
 
-        self.states = [[]]
+        # TODO: Perhaps move the list_style into DocxState.
+        # However, it should still be a list, and not a separate state,
+        # because nested lists are not really nested.
+        # So it will only be necessary if there are lists in tables
+        # that are in lists.
         self.list_style = []
-        self.sectionlevel = 0
-        self.table = None
         self.list_level = 0
-        self.column_widths = None
-        self.in_literal_block = False
+
+        # TODO: And what about sectionlevel?
+        self.sectionlevel = 0
+
         self.table_style_default = 'Grid Table 4'
-        self.table_style = self.table_style_default
-        self.more_cols = 0
-        self.row = None
-        self.cell_counter = 0
+        self.in_literal_block = False
         self.strong = False
         self.emphasis = False
 
-        # Self.current_location store places where paragraphs will be added, e.g.
-        # typically [document, table-cell]
-        self.current_location = [self.docbody.document]
+        self.current_state = DocxState(location=self.docx_container)
+        self.current_state.table_style = self.table_style_default
 
-        self.ncolumns = 1
-        "Number of columns in the current table."
+        "The place where paragraphs will be added."
+        self.old_states = []
+        "A list of older states, e.g. typically [document, table-cell]"
+
+        self.current_paragraph = None
+        "The current paragraph that text is being added to."
 
     def add_text(self, text):
         dprint()
-        # HB: cannot print all text in Python 2 because of unicode characters
-        # print(text)
         textrun = self.current_paragraph.add_run(text)
         if self.strong:
             textrun.bold = True
         if self.emphasis:
             textrun.italic = True
 
-    # TODO: Remove all this state stuff, it should not be necessary anymore
-    def new_state(self):
+    def new_state(self, location):
         dprint()
-        self.states.append([])
+        self.old_states.append(self.current_state)
+        self.current_state = DocxState(location=location)
+        print("HB new_state: {}".format(len(self.old_states)))
 
-    # TODO: Remove all this state stuff, it should not be necessary anymore
     def end_state(self, first=None):
         dprint()
-        result = self.states.pop()
-        if first is not None and result:
-            item = result[0]
-            if item:
-                result.insert(0, [first + item[0]])
-                result[1] = item[1:]
-        self.states[-1].extend(result)
-        # print(result)
+        self.current_state = self.old_states.pop()
+        print("HB old_state: {}".format(len(self.old_states)))
 
     def visit_start_of_file(self, node):
         dprint()
-        self.new_state()
+        # TODO: HB should visit_start_of_file reset the sectionlevel?
+        # If so, should it start a new state? If so, with which location?
 
         # FIXME: visit_start_of_file not close previous section.
         # sectionlevel keep previous and new file's heading level start with
@@ -183,21 +181,14 @@ class DocxTranslator(nodes.NodeVisitor):
         # (BTW Sphinx has heading levels per file? or entire document?)
         self.sectionlevel = 0
 
-        # HB: I believe this is all wrong, who cares about files?
-        #self.docbody.append(docx.pagebreak(type='page', orient='portrait'))
-        #self.docbody.document.add_page_break()
-
     def depart_start_of_file(self, node):
         dprint()
-        self.end_state()
 
     def visit_document(self, node):
         dprint()
-        self.new_state()
 
     def depart_document(self, node):
         dprint()
-        self.end_state()
 
     def visit_highlightlang(self, node):
         dprint()
@@ -209,19 +200,16 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_section(self, node):
         dprint()
-        #self.ensure_state()
         if self.sectionlevel > 0:
             self.sectionlevel -= 1
 
     def visit_topic(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_topic(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     visit_sidebar = visit_topic
     depart_sidebar = depart_topic
@@ -229,14 +217,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_rubric(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # self.add_text('-[ ')
 
     def depart_rubric(self, node):
         dprint()
         raise nodes.SkipNode
         # self.add_text(' ]-')
-        # self.end_state()
 
     def visit_compound(self, node):
         dprint()
@@ -256,9 +242,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_title(self, node):
         dprint()
-        self.new_state()
-        self.current_paragraph = self.current_location[-1].add_heading(level=self.sectionlevel)
-
+        self.current_paragraph = self.current_state.location.add_heading(level=self.sectionlevel)
 
     def depart_title(self, node):
         dprint()
@@ -291,15 +275,10 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_signature(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
-        # if node.parent['objtype'] in ('class', 'exception'):
-        #     self.add_text('%s ' % node.parent['objtype'])
 
     def depart_desc_signature(self, node):
         dprint()
         raise nodes.SkipNode
-        # XXX: wrap signatures in a way that makes sense
-        # self.end_state()
 
     def visit_desc_name(self, node):
         dprint()
@@ -384,22 +363,18 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_desc_content(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # self.add_text('\n')
 
     def depart_desc_content(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_figure(self, node):
         # FIXME: figure text become normal paragraph instead of caption.
         dprint()
-        self.new_state()
 
     def depart_figure(self, node):
         dprint()
-        self.end_state()
 
     def visit_caption(self, node):
         dprint()
@@ -412,7 +387,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_productionlist(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # names = []
         # for production in node:
         #     names.append(production['tokenname'])
@@ -424,27 +398,22 @@ class DocxTranslator(nodes.NodeVisitor):
         #     else:
         #         self.add_text('%s    ' % (' '*len(lastname)))
         #     self.add_text(production.astext() + '\n')
-        # self.end_state()
         # raise nodes.SkipNode
 
     def visit_seealso(self, node):
         dprint()
-        self.new_state()
 
     def depart_seealso(self, node):
         dprint()
-        self.end_state(first='')
 
     def visit_footnote(self, node):
         dprint()
         raise nodes.SkipNode
         # self._footnote = node.children[0].astext().strip()
-        # self.new_state()
 
     def depart_footnote(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state(first='[%s] ' % self._footnote)
 
     def visit_citation(self, node):
         dprint()
@@ -453,12 +422,10 @@ class DocxTranslator(nodes.NodeVisitor):
         #     self._citlabel = node[0].astext()
         # else:
         #     self._citlabel = ''
-        # self.new_state()
 
     def depart_citation(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state(first='[%s] ' % self._citlabel)
 
     def visit_label(self, node):
         dprint()
@@ -477,12 +444,10 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_option_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_option_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_option_group(self, node):
         dprint()
@@ -536,7 +501,7 @@ class DocxTranslator(nodes.NodeVisitor):
         # TODO: properly implement this!!
         spec = node['spec']
         widths = [float(l.split('cm')[0]) for l in spec.split("{")[1:]]
-        self.column_widths = widths
+        self.current_state.column_widths = widths
         raise nodes.SkipNode
 
     def visit_colspec(self, node):
@@ -550,14 +515,14 @@ class DocxTranslator(nodes.NodeVisitor):
         # is divided by the number of columns.
         #
         # It would perhaps also be possible to use node['colwidth'] in some way.
-        #print("HB colwidth {}".format(node['colwidth']))
-        # 22, the width of the column in ascii
-        if self.column_widths:
-            width = self.column_widths[0]
-            self.column_widths = self.column_widths[1:]
-            col = self.table.add_column(Cm(width))
+        # node['colwidth'] contains an integer like 22, the width of the column in ascii
+        if self.current_state.column_widths:
+            width = self.current_state.column_widths[0]
+            self.current_state.column_widths = self.current_state.column_widths[1:]
+            col = self.current_state.table.add_column(Cm(width))
         else:
-            col = self.table.add_column(self.docbody.document._block_width // self.ncolumns)
+            # noinspection PyProtectedMember
+            col = self.current_state.table.add_column(self.docx_container._block_width // self.current_state.ncolumns)
 
         raise nodes.SkipNode
 
@@ -567,13 +532,13 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_tgroup(self, node):
         dprint()
         colspecs = [c for c in node.children if isinstance(c, nodes.colspec)]
-        self.ncolumns = len(colspecs)
-        print("HB VT {} {} {}".format(self.ncolumns, len(node.children), [type(c) for c in node.children]))
-        pass
+        self.current_state.ncolumns = len(colspecs)
+        print("HB VT {} {} {}".format(
+            self.current_state.ncolumns, len(node.children), [type(c) for c in node.children]))
 
     def depart_tgroup(self, node):
         dprint()
-        self.ncolumns = 1
+        self.current_state.ncolumns = 1
         pass
 
     def visit_thead(self, node):
@@ -586,7 +551,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_tbody(self, node):
         dprint()
-        #self.table.append('sep')
 
     def depart_tbody(self, node):
         dprint()
@@ -594,8 +558,8 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_row(self, node):
         dprint()
-        self.row = self.table.add_row()
-        self.cell_counter = 0
+        self.current_state.row = self.current_state.table.add_row()
+        self.current_state.cell_counter = 0
 
     def depart_row(self, node):
         dprint()
@@ -607,76 +571,75 @@ class DocxTranslator(nodes.NodeVisitor):
             raise NotImplementedError('Row spanning cells are not implemented.')
         if 'morecols' in node:
             # Hack to make column spanning possible. TODO FIX
-            self.more_cols = node['morecols']
-        self.new_state()
-        cell = self.row.cells[self.cell_counter]
+            self.current_state.more_cols = node['morecols']
+
+        cell = self.current_state.row.cells[self.current_state.cell_counter]
         # A new paragraph will be added by Sphinx, so remove the automated one
         # This turns out to be not possible, so instead the existing one is
         # reused in visit_paragraph.
-        #cell.paragraphs.pop()
-        if self.more_cols:
+        # cell.paragraphs.pop()
+        if self.current_state.more_cols:
             # Perhaps this commented line works no too.
-            #cell = cell.merge(self.row.cells[self.cell_counter + self.more_cols])
-            for i in range(self.more_cols):
-                cell = cell.merge(self.row.cells[self.cell_counter + i + 1])
+            # cell = cell.merge(self.row.cells[self.cell_counter + self.more_cols])
+            for i in range(self.current_state.more_cols):
+                cell = cell.merge(self.current_state.row.cells[self.current_state.cell_counter + i + 1])
 
-        self.current_location.append(cell)
+        self.new_state(location=cell)
+        # For some annoying reason, a new paragraph is automatically added
+        # to each table cell. This is frustrating when you want, e.g. to
+        # add a list item instead of a normal paragraph.
+        self.current_paragraph = cell.paragraphs[0]
 
     def depart_entry(self, node):
         dprint()
-        self.cell_counter = self.cell_counter + self.more_cols + 1
-        self.more_cols = 0
-        self.current_location.pop()
+        self.end_state()
+        self.current_state.cell_counter = self.current_state.cell_counter + self.current_state.more_cols + 1
+        self.current_state.more_cols = 0
 
     def visit_table(self, node):
         dprint()
-        # Not sure whether nested tables work now, maybe.
-        #if self.table:
-        #    raise NotImplementedError('Nested tables are not supported.')
-        self.new_state()
+
+        style = self.current_state.table_style
+        try:
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.TABLE)
+        except KeyError as exc:
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
+            logger.warning(msg)
+            style = None
 
         # Columns are added when a colspec is visited.
-        try:
-            self.table = self.current_location[-1].add_table(
-                rows=0, cols=0, style=self.table_style
-            )
-        except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(self.table_style, repr(exc))
-            logger.warning(msg)
-            self.table = self.current_location[-1].add_table(
-                rows=0, cols=0, style=None
-            )
+
+        # It is only possible to use a style in add_table when adding a
+        # table to the root document. That is, not for a table in a table.
+        if len(self.old_states):
+            self.current_state.table = self.current_state.location.add_table(rows=0, cols=0)
+        else:
+            self.current_state.table = self.current_state.location.add_table(
+                rows=0, cols=0, style=style)
 
     def depart_table(self, node):
         dprint()
 
-        self.table = None
-        self.table_style = self.table_style_default
+        self.current_state.table = None
+        self.current_state.table_style = self.table_style_default
 
         # Add an empty paragraph to prevent tables from being concatenated.
         # TODO: Figure out some better solution.
-        self.docbody.document.add_paragraph("")
-        self.end_state()
+        self.current_state.location.add_paragraph("")
 
     def visit_acks(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # self.add_text(', '.join(n.astext() for n in node.children[0].children)
         #               + '.')
-        # self.end_state()
-        raise nodes.SkipNode
 
     def visit_image(self, node):
         dprint()
-        return
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
-        dc = self.docx_container
-        dc.relationships, picpara = docx.picture(
-                dc.relationships, file_path, '')
-        self.docbody.append(picpara)
+        # TODO implement this.
+        return
 
     def depart_image(self, node):
         dprint()
@@ -684,9 +647,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_transition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # self.add_text('=' * 70)
-        # self.end_state()
 
     def visit_bullet_list(self, node):
         dprint()
@@ -694,27 +655,23 @@ class DocxTranslator(nodes.NodeVisitor):
         # the list is numbered or not, like the original code did.
         # But that code did not properly account for the level.
         # So merge these two attempts.
-        #self.list_style.append('ListBullet')
-        #self.new_state()
+        # self.list_style.append('ListBullet')
         self.list_level += 1
 
     def depart_bullet_list(self, node):
         dprint()
-        #self.list_style.pop()
+        # TODO: self.list_style.pop()
         self.list_level -= 1
-        #self.end_state()
 
     def visit_enumerated_list(self, node):
         dprint()
-        #self.list_style.append('ListNumber')
-        #self.new_state()
+        # TODO: self.list_style.append('ListNumber')
         self.list_level += 1
 
     def depart_enumerated_list(self, node):
         dprint()
-        #self.list_style.pop()
+        # TODO: self.list_style.pop()
         self.list_level -= 1
-        #self.end_state()
 
     def visit_definition_list(self, node):
         dprint()
@@ -728,19 +685,38 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_list_item(self, node):
         dprint()
-        #self.new_state()
-
         # A new paragraph is created here, but the next visit is to
         # paragraph, so that would add another paragraph. That is
         # prevented if current_paragraph is an empty List paragraph.
+        style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
         try:
-            style = 'List Bullet' if self.list_level < 2 else 'List Bullet {}'.format(self.list_level)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(style, repr(exc))
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
-            self.current_paragraph = self.docbody.document.add_paragraph(style=None)
+            style = None
+
+        curloc = self.current_state.location
+        if isinstance(curloc, _Cell):
+            if len(curloc.paragraphs) == 1:
+                if not curloc.paragraphs[0].text:
+                    # An empty paragraph is created when a Cell is created.
+                    # Reuse this paragraph.
+                    print("HB VLI reuse {}".format(style))
+                    self.current_paragraph = curloc.paragraphs[0]
+                    self.current_paragraph.style = style
+                else:
+                    print("HB VLI create 1 {}".format(style))
+                    self.current_paragraph = curloc.add_paragraph(style=style)
+            else:
+                print("HB VLI create 2 {}".format(style))
+                self.current_paragraph = curloc.add_paragraph(style=style)
+        else:
+            print("HB VLI create 3 {}".format(style))
+            self.current_paragraph = curloc.add_paragraph(style=style)
+
+        print("HB VLI end {}".format(self.current_paragraph.style))
 
     def depart_list_item(self, node):
         dprint()
@@ -748,8 +724,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_definition_list_item(self, node):
         dprint()
         raise nodes.SkipNode
-        # self._li_has_classifier = len(node) >= 2 and \
-        #                           isinstance(node[1], nodes.classifier)
 
     def depart_definition_list_item(self, node):
         dprint()
@@ -758,33 +732,27 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_term(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_term(self, node):
         dprint()
         raise nodes.SkipNode
-        # if not self._li_has_classifier:
-        #     self.end_state()
 
     def visit_classifier(self, node):
         dprint()
         raise nodes.SkipNode
-        #self.add_text(' : ')
+        # self.add_text(' : ')
 
     def depart_classifier(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_definition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_definition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_field_list(self, node):
         dprint()
@@ -805,23 +773,19 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_field_name(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_field_name(self, node):
         dprint()
         raise nodes.SkipNode
         # self.add_text(':')
-        # self.end_state()
 
     def visit_field_body(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_field_body(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_centered(self, node):
         dprint()
@@ -850,24 +814,14 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def _visit_admonition(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
-
-    def _make_depart_admonition(name):
-        def depart_admonition(self, node):
-            dprint()
-            raise nodes.SkipNode
-            # self.end_state(first=admonitionlabels[name] + ': ')
-        return depart_admonition
 
     visit_attention = _visit_admonition
     depart_attention = _make_depart_admonition('attention')
@@ -891,7 +845,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
+        # from sphinx.locale import admonitionlabels, versionlabels, _
         # if node.children:
         #     self.add_text(
         #             versionlabels[node['type']] % node['version'] + ': ')
@@ -902,27 +856,24 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_versionmodified(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_literal_block(self, node):
         dprint()
-        # Not sure whether this new_state will work when the literal block
-        # is in a list item or a table cell...
-        self.new_state()
+        # TODO: Check whether literal blocks work in tables and lists.
         self.in_literal_block = True
 
         # Unlike with Lists, there will not be a visit to paragraph in a
         # literal block, so we *must* create the paragraph here.
+        style = 'Preformatted Text'
         try:
-            style = 'Preformatted Text'
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
+            # Check whether the style is part of the document.
+            self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
-            msg = ('looks like style "{}" is missing\n{}\n'
-                   'using no style').format(self.table_style, repr(exc))
+            msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
             style = None
-            self.current_paragraph = self.docbody.document.add_paragraph(style=style)
 
+        self.current_paragraph = self.current_state.location.add_paragraph(style=style)
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     def depart_literal_block(self, node):
@@ -932,22 +883,18 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_doctest_block(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_doctest_block(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_line_block(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
 
     def depart_line_block(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.end_state()
 
     def visit_line(self, node):
         dprint()
@@ -958,46 +905,47 @@ class DocxTranslator(nodes.NodeVisitor):
         pass
 
     def visit_block_quote(self, node):
-        # FIXME: working but broken.
         dprint()
-        self.new_state()
 
     def depart_block_quote(self, node):
         dprint()
-        self.end_state()
 
     def visit_compact_paragraph(self, node):
         dprint()
-        pass
 
     def depart_compact_paragraph(self, node):
         dprint()
-        pass
 
     def visit_paragraph(self, node):
         dprint()
 
-        curloc = self.current_location[-1]
+        curloc = self.current_state.location
 
-        if isinstance(curloc, _Cell):
-            if len(curloc.paragraphs):
+        if 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
+            print("HB VP List")
+            # This is the first paragraph in a list item, so do not create another one.
+            pass
+        elif isinstance(curloc, _Cell):
+            if len(curloc.paragraphs) == 1:
                 if not curloc.paragraphs[0].text:
                     # An empty paragraph is created when a Cell is created.
                     # Reuse this paragraph.
                     self.current_paragraph = curloc.paragraphs[0]
+                    print("HB VP cell reuse")
                 else:
-                    self.current_paragraph = self.current_location[-1].add_paragraph()
+                    self.current_paragraph = curloc.add_paragraph()
+                    print("HB VP cell create 1")
             else:
-                self.current_paragraph = self.current_location[-1].add_paragraph()
+                self.current_paragraph = curloc.add_paragraph()
+                print("HB VP cell create 2")
             # HACK because the style is messed up, TODO FIX
             self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
             self.current_paragraph.paragraph_format.left_indent = 0
-        elif 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
-            # This is the first paragraph in a list item, so do not create another one.
-            pass
         else:
-            self.current_paragraph = self.current_location[-1].add_paragraph()
+            print("HB VP normal")
+            self.current_paragraph = curloc.add_paragraph()
 
+        print("HB VP end {}".format(self.current_paragraph.style))
 
     def depart_paragraph(self, node):
         dprint()
@@ -1164,9 +1112,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_system_message(self, node):
         dprint()
         raise nodes.SkipNode
-        # self.new_state()
         # self.add_text('<SYSTEM MESSAGE: %s>' % node.astext())
-        # self.end_state()
 
     def visit_comment(self, node):
         dprint()
@@ -1174,8 +1120,8 @@ class DocxTranslator(nodes.NodeVisitor):
         # Use proper directives or something like that
         comment = node[0]
         if 'DocxTableStyle' in comment:
-            self.table_style = comment.split('DocxTableStyle')[-1].strip()
-        print("HB tablestyle {}".format(self.table_style))
+            self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
+        print("HB tablestyle {}".format(self.current_state.table_style))
         raise nodes.SkipNode
 
     def visit_meta(self, node):
@@ -1190,6 +1136,11 @@ class DocxTranslator(nodes.NodeVisitor):
         #     self.body.append(node.astext())
 
     def unknown_visit(self, node):
+        dprint()
+        raise nodes.SkipNode
+        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
+
+    def unknown_departure(self, node):
         dprint()
         raise nodes.SkipNode
         # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
