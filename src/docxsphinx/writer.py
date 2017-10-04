@@ -638,8 +638,8 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         uri = node.attributes['uri']
         file_path = os.path.join(self.builder.env.srcdir, uri)
-        # TODO implement this.
-        return
+        self.docx_container.add_picture(file_path)  # width=Inches(1.25))
+        # .. todo:: 'width' keyword is not supported
 
     def depart_image(self, node):
         dprint()
