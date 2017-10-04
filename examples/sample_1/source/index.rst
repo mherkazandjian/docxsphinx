@@ -49,6 +49,11 @@ Thanks to the awesomeness of the lxml module, we can:
 
 .. .. page-break::
 
+Mathematical formulas
+=====================
+
+Pythagorean theorem :math:`a^2 + b^2 = c^2`.
+
 Ideas? Questions? Want to contribute?
 ======================================
 

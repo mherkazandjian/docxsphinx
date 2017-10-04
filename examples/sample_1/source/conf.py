@@ -25,7 +25,10 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['docxsphinx']
+extensions = [
+    'docxsphinx',
+    'sphinx.ext.imgmath'
+]
 
 # 'docx_template' need *.docx or *.dotx template file name. default is None.
 docx_template = 'template.docx'

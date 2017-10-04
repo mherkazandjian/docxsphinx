@@ -644,6 +644,14 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_image(self, node):
         dprint()
 
+    def visit_math(self, node, math_env=''):
+        import pdb; pdb.set_trace()
+        pass
+        # raise nodes.SkipNode
+
+    def depart_math(self, node):
+        dprint()
+
     def visit_transition(self, node):
         dprint()
         raise nodes.SkipNode
