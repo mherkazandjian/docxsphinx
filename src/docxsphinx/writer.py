@@ -1101,11 +1101,14 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_comment(self, node):
         dprint()
+        # TODO: Actually deal with comments
+        # TODO: What about empty comments, like 'only'? or are these directives?
         # TODO: FIX Dirty hack / kludge to set table style.
-        # Use proper directives or something like that
-        comment = node[0]
-        if 'DocxTableStyle' in comment:
-            self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
+        #       Use proper directives or something like that
+        if len(node):
+            comment = node[0]
+            if 'DocxTableStyle' in comment:
+                self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
         raise nodes.SkipNode
 
     def visit_meta(self, node):
