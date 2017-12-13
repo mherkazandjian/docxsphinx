@@ -119,7 +119,44 @@ class DocxState(object):
 class DocxTranslator(nodes.NodeVisitor):
     """Visitor class to create docx content."""
 
+    # Template for the MathJax script in the header:
+    mathjax_script = '<script type="text/javascript" src="%s"></script>\n'
+
+    mathjax_url = 'file:/usr/share/javascript/mathjax/MathJax.js'
+    """
+    URL of the MathJax javascript library.
+
+    The MathJax library ought to be installed on the same
+    server as the rest of the deployed site files and specified
+    in the `math-output` setting appended to "mathjax".
+    See `Docutils Configuration`__.
+
+    __ http://docutils.sourceforge.net/docs/user/config.html#math-output
+
+    The fallback tries a local MathJax installation at
+    ``/usr/share/javascript/mathjax/MathJax.js``.
+    """
+
+    # Mathematics:
+    # As there is no native HTML math support, we provide alternatives
+    # for the math-output: LaTeX and MathJax simply wrap the content,
+    # HTML and MathML also convert the math_code.
+    # HTML container
+    math_tags = {  # math_output: (block, inline, class-arguments)
+        'mathml': ('div', '', ''),
+        'html': ('div', 'span', 'formula'),
+        'mathjax': ('div', 'span', 'math'),
+        'latex': ('pre', 'tt', 'math'),
+    }
+
     def __init__(self, document, builder, docx_container):
+        """
+        constructor
+
+        :param document: .. todo:: add doc
+        :param builder: .. todo:: add doc
+        :param docx_container: .. todo:: add doc
+        """
         self.builder = builder
         self.docx_container = docx_container
         nodes.NodeVisitor.__init__(self, document)
@@ -149,6 +186,13 @@ class DocxTranslator(nodes.NodeVisitor):
 
         self.current_paragraph = None
         "The current paragraph that text is being added to."
+
+        self.settings = settings = document.settings
+
+        self.math_output = settings.math_output.split()
+        self.math_output_options = self.math_output[1:]
+        self.math_output = self.math_output[0].lower()
+        self.math_header = []
 
     def add_text(self, text):
         dprint()
@@ -645,9 +689,123 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
 
     def visit_math(self, node, math_env=''):
+        """
+        aaaaa
+        self.math_output
+        self.math_output_options
+        self.math_tags:
+        self.mathjax_script
+        self.mathjax_url
+        self.math_header
+
+        self.document.reporter.error
+        unichar2tex.uni2tex_table
+        self.stylesheet_call
+        self.doctype = self.doctype_mathml
+        self.content_type = self.content_type_mathml
+        """
+        latex_src = node['latex']
         import pdb; pdb.set_trace()
         pass
         # raise nodes.SkipNode
+
+        if self.math_output not in self.math_tags:
+            self.document.reporter.error(
+                'math-output format "%s" not supported '
+                'falling back to "latex"'% self.math_output)
+            self.math_output = 'latex'
+        tag = self.math_tags[self.math_output][math_env == '']
+        clsarg = self.math_tags[self.math_output][2]
+        # LaTeX container
+        wrappers = {# math_mode: (inline, block)
+                    'mathml':  ('$%s$',   '\\begin{%s}\n%s\n\\end{%s}'),
+                    'html':    ('$%s$',   '\\begin{%s}\n%s\n\\end{%s}'),
+                    'mathjax': (r'\(%s\)', '\\begin{%s}\n%s\n\\end{%s}'),
+                    'latex':   (None,     None),
+                   }
+        wrapper = wrappers[self.math_output][math_env != '']
+        if self.math_output == 'mathml' and (not self.math_output_options or
+                                self.math_output_options[0] == 'blahtexml'):
+            wrapper = None
+        # get and wrap content
+        math_code = node.astext().translate(unichar2tex.uni2tex_table)
+        if wrapper:
+            try: # wrapper with three "%s"
+                math_code = wrapper % (math_env, math_code, math_env)
+            except TypeError: # wrapper with one "%s"
+                math_code = wrapper % math_code
+        # settings and conversion
+        if self.math_output in ('latex', 'mathjax'):
+            math_code = self.encode(math_code)
+        if self.math_output == 'mathjax' and not self.math_header:
+            try:
+                self.mathjax_url = self.math_output_options[0]
+            except IndexError:
+                self.document.reporter.warning('No MathJax URL specified, '
+                    'using local fallback (see config.html)')
+            # append configuration, if not already present in the URL:
+            # input LaTeX with AMS, output common HTML
+            if '?' not in self.mathjax_url:
+                self.mathjax_url += '?config=TeX-AMS_CHTML'
+            self.math_header = [self.mathjax_script % self.mathjax_url]
+        elif self.math_output == 'html':
+            if self.math_output_options and not self.math_header:
+                self.math_header = [self.stylesheet_call(
+                    utils.find_file_in_dirs(s, self.settings.stylesheet_dirs))
+                    for s in self.math_output_options[0].split(',')]
+            # TODO: fix display mode in matrices and fractions
+            math2html.DocumentParameters.displaymode = (math_env != '')
+            math_code = math2html.math2html(math_code)
+        elif self.math_output == 'mathml':
+            if  'XHTML 1' in self.doctype:
+                self.doctype = self.doctype_mathml
+                self.content_type = self.content_type_mathml
+            converter = ' '.join(self.math_output_options).lower()
+            try:
+                if converter == 'latexml':
+                    math_code = tex2mathml_extern.latexml(math_code,
+                                                    self.document.reporter)
+                elif converter == 'ttm':
+                    math_code = tex2mathml_extern.ttm(math_code,
+                                                    self.document.reporter)
+                elif converter == 'blahtexml':
+                    math_code = tex2mathml_extern.blahtexml(math_code,
+                        inline=not(math_env),
+                        reporter=self.document.reporter)
+                elif not converter:
+                    math_code = latex2mathml.tex2mathml(math_code,
+                                                        inline=not(math_env))
+                else:
+                    self.document.reporter.error('option "%s" not supported '
+                    'with math-output "MathML"')
+            except OSError:
+                    raise OSError('is "latexmlmath" in your PATH?')
+            except SyntaxError as err:
+                err_node = self.document.reporter.error(err, base_node=node)
+                self.visit_system_message(err_node)
+                self.body.append(self.starttag(node, 'p'))
+                self.body.append(','.join(err.args))
+                self.body.append('</p>\n')
+                self.body.append(self.starttag(node, 'pre',
+                                               CLASS='literal-block'))
+                self.body.append(self.encode(math_code))
+                self.body.append('\n</pre>\n')
+                self.depart_system_message(err_node)
+                raise nodes.SkipNode
+        # append to document body
+        if tag:
+            self.body.append(self.starttag(node, tag,
+                                           suffix='\n'*bool(math_env),
+                                           CLASS=clsarg))
+        self.body.append(math_code)
+        if math_env: # block mode (equation, display)
+            self.body.append('\n')
+        if tag:
+            self.body.append('</%s>' % tag)
+        if math_env:
+            self.body.append('\n')
+        # Content already processed:
+        raise nodes.SkipNode
 
     def depart_math(self, node):
         dprint()
