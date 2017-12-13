@@ -48,4 +48,9 @@ setup(
      test_suite='nose.collector',
      tests_require=['Nose'],
      zip_safe=False,
+     entry_points={
+        'sphinx.builders': [
+            'docx=docxsphinx',
+        ],
+     }
 )
