@@ -32,6 +32,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger('docx')
 
+WARNINGS = set()
+
 
 def dprint(_func=None, **kw):
     """Print debug information."""
@@ -603,7 +605,9 @@ class DocxTranslator(nodes.NodeVisitor):
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.TABLE)
         except KeyError as exc:
             msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
-            logger.warning(msg)
+            if msg not in WARNINGS:
+                WARNINGS.add(msg)
+                logger.warning(msg)
             style = None
 
         # Columns are added when a colspec is visited.
@@ -692,7 +696,9 @@ class DocxTranslator(nodes.NodeVisitor):
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
             msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
-            logger.warning(msg)
+            if msg not in WARNINGS:
+                WARNINGS.add(msg)
+                logger.warning(msg)
             style = None
 
         curloc = self.current_state.location
@@ -862,7 +868,9 @@ class DocxTranslator(nodes.NodeVisitor):
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
             msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
-            logger.warning(msg)
+            if msg not in WARNINGS:
+                WARNINGS.add(msg)
+                logger.warning(msg)
             style = None
 
         self.current_paragraph = self.current_state.location.add_paragraph(style=style)
