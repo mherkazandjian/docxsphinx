@@ -46,6 +46,8 @@ def dprint(_func=None, **kw):
     if _func is None:
         _func = f.f_code.co_name
 
+    # It would be nice to have the non-kw dprints to be debug-level' issues,
+    # but that does not seem to work.
     if kw:
         logger.info(' '.join([_func, text]))
 
