@@ -51,8 +51,6 @@ def dprint(_func=None, **kw):
     if kw:
         logger.info(' '.join([_func, text]))
 
-    logger.info(' '.join([_func, text]))  # HB TODO remove
-
 
 # noinspection PyUnusedLocal
 def _make_depart_admonition(name):
@@ -274,7 +272,6 @@ class DocxTranslator(nodes.NodeVisitor):
         self.desc_type.append(node['objtype'])
         # Description lists are also like lists
         self.desc_level += 1
-        print("HB {} {}".format(self.desc_type[-1], self.desc_level))
 
     def depart_desc(self, node):
         dprint()
