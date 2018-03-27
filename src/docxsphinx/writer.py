@@ -52,6 +52,7 @@ def dprint(_func=None, **kw):
         logger.info(' '.join([_func, text]))
 
     logger.info(' '.join([_func, text]))  # HB TODO Remove
+    print(' '.join([_func, text]))  # HB TODO Remove
 
 
 # noinspection PyUnusedLocal
@@ -868,13 +869,14 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Unlike with Lists, there will not be a visit to paragraph in a
         # literal block, so we *must* create the paragraph here.
-        style = 'Preformatted Text'
+        style = 'MacroText'
         try:
             # Check whether the style is part of the document.
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
         except KeyError as exc:
             msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
+            print(msg)  # HB TODO: Remove
             style = None
 
         self.current_paragraph = self.current_state.location.add_paragraph(style=style)
