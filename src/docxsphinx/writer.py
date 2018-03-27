@@ -137,7 +137,7 @@ class DocxTranslator(nodes.NodeVisitor):
         self.list_level = 0
 
         self.desc_type = []
-        self.desc_level = 0  # HB TODO replace with len(self.desc_type) ?
+        self.desc_level = 0
 
         # TODO: And what about sectionlevel?
         self.sectionlevel = 0
@@ -326,18 +326,15 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_parameterlist(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text('(')
         # self.first_param = 1
 
     def depart_desc_parameterlist(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text(')')
 
     def visit_desc_parameter(self, node):
         dprint()
-        raise nodes.SkipNode
         # if not self.first_param:
         #     self.add_text(', ')
         # else:
@@ -347,12 +344,10 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_optional(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text('[')
 
     def depart_desc_optional(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text(']')
 
     def visit_desc_annotation(self, node):
@@ -765,28 +760,29 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_field(self, node):
         dprint()
-        pass
+        self.desc_type.append('field')
+        curloc = self.current_state.location
+        self.current_paragraph = curloc.add_paragraph()
+        self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level)
 
     def depart_field(self, node):
         dprint()
-        pass
+        self.desc_type.pop()
 
     def visit_field_name(self, node):
         dprint()
-        raise nodes.SkipNode
+        self.strong = True
 
     def depart_field_name(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(':')
+        self.add_text(": ")
+        self.strong = False
 
     def visit_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def depart_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_centered(self, node):
         dprint()
@@ -924,6 +920,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
         if 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
             # This is the first paragraph in a list item, so do not create another one.
+            pass
+        elif self.desc_type and self.desc_type[-1] == 'field':
+            # The paragraph has already been created by visit_field_name.
             pass
         elif isinstance(curloc, _Cell):
             if len(curloc.paragraphs) == 1:
