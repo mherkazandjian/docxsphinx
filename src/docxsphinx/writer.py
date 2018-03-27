@@ -274,11 +274,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_signature(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def depart_desc_signature(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_desc_name(self, node):
         dprint()
@@ -362,12 +360,10 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_content(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text('\n')
 
     def depart_desc_content(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_figure(self, node):
         # FIXME: figure text become normal paragraph instead of caption.
@@ -1103,9 +1099,10 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         # TODO: FIX Dirty hack / kludge to set table style.
         # Use proper directives or something like that
-        comment = node[0]
-        if 'DocxTableStyle' in comment:
-            self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
+        if len(node):
+            comment = node[0]
+            if 'DocxTableStyle' in comment:
+                self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
         raise nodes.SkipNode
 
     def visit_meta(self, node):
