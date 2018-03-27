@@ -51,6 +51,8 @@ def dprint(_func=None, **kw):
     if kw:
         logger.info(' '.join([_func, text]))
 
+    logger.info(' '.join([_func, text]))  # HB TODO Remove
+
 
 # noinspection PyUnusedLocal
 def _make_depart_admonition(name):
@@ -136,6 +138,8 @@ class DocxTranslator(nodes.NodeVisitor):
 
         self.desc_type = []
         self.desc_level = 0
+
+        self.first_param = False
 
         # TODO: And what about sectionlevel?
         self.sectionlevel = 0
@@ -294,8 +298,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_desc_name(self, node):
         dprint()
         self.strong = False
-        if self.desc_type[-1] in ('function', 'method'):
-            self.add_text("()")
 
     def visit_desc_addname(self, node):
         dprint()
@@ -323,21 +325,21 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_parameterlist(self, node):
         dprint()
-        # self.add_text('(')
-        # self.first_param = 1
+        self.add_text('(')
+        self.first_param = True
 
     def depart_desc_parameterlist(self, node):
         dprint()
-        # self.add_text(')')
+        self.add_text(')')
 
     def visit_desc_parameter(self, node):
         dprint()
-        # if not self.first_param:
-        #     self.add_text(', ')
-        # else:
-        #     self.first_param = 0
-        # self.add_text(node.astext())
-        # raise nodes.SkipNode
+        if not self.first_param:
+            self.add_text(', ')
+
+    def depart_desc_parameter(self, node):
+        self.first_param = False
+        dprint()
 
     def visit_desc_optional(self, node):
         dprint()
@@ -1130,9 +1132,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def unknown_visit(self, node):
         dprint()
         raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
 
     def unknown_departure(self, node):
         dprint()
-        raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
