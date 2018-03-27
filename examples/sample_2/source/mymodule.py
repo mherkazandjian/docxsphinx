@@ -14,3 +14,11 @@ class MyClass(object):
         :return: MyClass
         """
         return self
+
+
+def just_a_function():
+    """
+    Just a function
+    :return: int
+    """
+    return 42
