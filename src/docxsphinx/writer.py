@@ -698,6 +698,10 @@ class DocxTranslator(nodes.NodeVisitor):
             logger.warning(msg)
             style = None
 
+        # Bulleted lists do not seem to respect left_indent, so need to use another style.
+        if self.desc_level:
+            style = None
+
         curloc = self.current_state.location
         if isinstance(curloc, _Cell):
             if len(curloc.paragraphs) == 1:
@@ -712,6 +716,10 @@ class DocxTranslator(nodes.NodeVisitor):
                 self.current_paragraph = curloc.add_paragraph(style=style)
         else:
             self.current_paragraph = curloc.add_paragraph(style=style)
+
+        # Fix parameter lists
+        if self.desc_level:
+            self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level + 1)
 
     def depart_list_item(self, node):
         dprint()
