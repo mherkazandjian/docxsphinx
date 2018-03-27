@@ -51,6 +51,8 @@ def dprint(_func=None, **kw):
     if kw:
         logger.info(' '.join([_func, text]))
 
+    logger.info(' '.join([_func, text]))  # HB TODO remove
+
 
 # noinspection PyUnusedLocal
 def _make_depart_admonition(name):
@@ -133,6 +135,8 @@ class DocxTranslator(nodes.NodeVisitor):
         # that are in lists.
         self.list_style = []
         self.list_level = 0
+
+        self.desc_level = 0
 
         # TODO: And what about sectionlevel?
         self.sectionlevel = 0
@@ -266,14 +270,19 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc(self, node):
         dprint()
-        pass
+        print("HB {} {}".format(node['objtype'], self.desc_level))
+        # Description lists are also like lists
+        self.desc_level += 1
 
     def depart_desc(self, node):
         dprint()
-        pass
+        self.desc_level -= 1
 
     def visit_desc_signature(self, node):
         dprint()
+        curloc = self.current_state.location
+        self.current_paragraph = curloc.add_paragraph()
+        self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level - 1)
 
     def depart_desc_signature(self, node):
         dprint()
@@ -304,7 +313,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_returns(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text(' -> ')
 
     def depart_desc_returns(self, node):
@@ -927,6 +935,8 @@ class DocxTranslator(nodes.NodeVisitor):
             self.current_paragraph.paragraph_format.left_indent = 0
         else:
             self.current_paragraph = curloc.add_paragraph()
+            if self.desc_level > 0:
+                self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level)
 
     def depart_paragraph(self, node):
         dprint()
