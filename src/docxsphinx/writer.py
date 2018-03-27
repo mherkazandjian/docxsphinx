@@ -136,7 +136,8 @@ class DocxTranslator(nodes.NodeVisitor):
         self.list_style = []
         self.list_level = 0
 
-        self.desc_level = 0
+        self.desc_type = []
+        self.desc_level = 0  # HB TODO replace with len(self.desc_type) ?
 
         # TODO: And what about sectionlevel?
         self.sectionlevel = 0
@@ -270,18 +271,20 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc(self, node):
         dprint()
-        print("HB {} {}".format(node['objtype'], self.desc_level))
+        self.desc_type.append(node['objtype'])
         # Description lists are also like lists
         self.desc_level += 1
+        print("HB {} {}".format(self.desc_type[-1], self.desc_level))
 
     def depart_desc(self, node):
         dprint()
         self.desc_level -= 1
+        self.desc_type.pop()
 
     def visit_desc_signature(self, node):
         dprint()
         curloc = self.current_state.location
-        self.current_paragraph = curloc.add_paragraph()
+        self.current_paragraph = curloc.add_paragraph(style='MacroText')
         self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level - 1)
 
     def depart_desc_signature(self, node):
@@ -289,11 +292,13 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_name(self, node):
         dprint()
-        pass
+        self.strong = True
 
     def depart_desc_name(self, node):
         dprint()
-        pass
+        self.strong = False
+        if self.desc_type[-1] in ('function', 'method'):
+            self.add_text("()")
 
     def visit_desc_addname(self, node):
         dprint()
