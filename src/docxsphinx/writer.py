@@ -1000,11 +1000,19 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_literal_emphasis(self, node):
         dprint()
-        # self.add_text('*')
+        self.emphasis = True
 
     def depart_literal_emphasis(self, node):
         dprint()
-        # self.add_text('*')
+        self.emphasis = False
+
+    def visit_literal_strong(self, node):
+        dprint()
+        self.strong = True
+
+    def depart_literal_strong(self, node):
+        dprint()
+        self.strong = False
 
     def visit_strong(self, node):
         dprint()
