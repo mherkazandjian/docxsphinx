@@ -59,6 +59,12 @@ To debug the build process
  
     python -m pdb $(which sphinx-build) -b docx /path/to/src/dir /path/to/build/dir OTHER_SPHINX_OPTIONS_IF_ANY
 
+To produce the ``.docx`` of any of the example files using the current
+development docxsphinx source, e.g. the sphixn project ``sample_2``:
+
+    cd examples/sample_2
+    PYTHONPATH=../../src:$PYTHONPATH make docx -B
+
 API
 ===
 see also 
