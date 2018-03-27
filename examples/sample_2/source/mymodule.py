@@ -17,10 +17,15 @@ class MyClass(object):
         return self
 
 
-def just_a_function():
+def just_a_function(x, y=4):
     """
     Just a function
 
-    :return: int
+    :param x: First number
+    :param y: Second number
+    :type x: int
+    :type y: int
+    :return: multiplication
+    :rtype: int
     """
-    return 42
+    return x * y
