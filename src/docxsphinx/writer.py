@@ -51,9 +51,6 @@ def dprint(_func=None, **kw):
     if kw:
         logger.info(' '.join([_func, text]))
 
-    logger.info(' '.join([_func, text]))  # HB TODO Remove
-    print(' '.join([_func, text]))  # HB TODO Remove
-
 
 # noinspection PyUnusedLocal
 def _make_depart_admonition(name):
@@ -876,7 +873,6 @@ class DocxTranslator(nodes.NodeVisitor):
         except KeyError as exc:
             msg = 'looks like style "{}" is missing\n{}\n using no style'.format(style, repr(exc))
             logger.warning(msg)
-            print(msg)  # HB TODO: Remove
             style = None
 
         self.current_paragraph = self.current_state.location.add_paragraph(style=style)
