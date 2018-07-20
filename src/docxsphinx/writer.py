@@ -16,7 +16,7 @@ import sys
 # noinspection PyUnresolvedReferences
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
-from docx.shared import Cm
+from docx.shared import Cm, Pt
 # noinspection PyProtectedMember
 from docx.table import _Cell
 from docx import Document
@@ -635,9 +635,12 @@ class DocxTranslator(nodes.NodeVisitor):
     def visit_image(self, node):
         dprint()
         uri = node.attributes['uri']
+        width = float(node.attributes['width']) if 'width' in node.attributes else None
+        height = float(node.attributes['height']) if 'height' in node.attributes else None
+        pt_width = Pt(width) if width is not None else None
+        pt_height = Pt(height) if height is not None else None
         file_path = os.path.join(self.builder.env.srcdir, uri)
-        self.docx_container.add_picture(file_path)  # width=Inches(1.25))
-        # .. todo:: 'width' keyword is not supported
+        self.docx_container.add_picture(file_path, width=pt_width, height=pt_height)
 
     def depart_image(self, node):
         dprint()
