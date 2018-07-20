@@ -16,3 +16,11 @@ Figure 2.1(b)
 .. figure:: butterfly.png
     :align: left
     :width: 200
+
+Some text
+
+.. figure:: butterfly.png
+
+.. figure:: butterfly.png
+    :width: 110
+    :height: 20
