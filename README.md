@@ -11,15 +11,19 @@ Installation
 ============
 The latest bleeding edge version can be installed through
 
+   ```` 
    pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
+   ````
 
 Alternatively the repository can be cloned and installed locally
 
+
+   ````
    git clone https://github.com/mherkazandjian/docxsphinx.git
    cd docxsphinx
    python -m pip install -r requirements.txt
    python setup.py install
-
+   ````
 
 After installation, ```make docx``` in a sphinx project  should work
 (see next section)
