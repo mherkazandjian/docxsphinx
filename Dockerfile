@@ -17,7 +17,5 @@ RUN \
     git+https://github.com/mherkazandjian/docxsphinx.git@master
 
 RUN apt-get clean
-  
-# Define default command.
-CMD ["make docx"]
 
+ENTRYPOINT ["make", "docx", "html"]
