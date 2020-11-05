@@ -1,3 +1,7 @@
+# DocxSphinx
+
+[![CircleCI](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master.svg?style=svg)](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master)
+
 Introduction
 ============
 This repository has been forked from
