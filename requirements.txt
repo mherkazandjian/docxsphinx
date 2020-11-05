@@ -1,4 +1,5 @@
-pytest
-sphinx>=1.6.2
+pytest==6.1.2
+docutils==0.15
+sphinx==1.6.2
 python-docx>=0.8.6
-nose
+nose==1.3.7
