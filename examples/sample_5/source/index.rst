@@ -1,4 +1,4 @@
 ==================================
-Welcome to Pythons docx module
+Welcome to Python docx module
 ==================================
 

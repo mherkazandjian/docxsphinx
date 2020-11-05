@@ -17,10 +17,17 @@ from docutils import nodes
 from docutils.io import StringOutput
 
 from sphinx.builders import Builder
+
+from sphinx.locale import __   # .. todo:: dev:: not backwards compatible with sphinx < 2.0.0
+
 from sphinx.util.osutil import ensuredir, os_path
 from sphinx.util.nodes import inline_all_toctrees
+from sphinx.util import logging
 from sphinx.util.console import bold, darkgreen, brown
 from docxsphinx.writer import DocxWriter
+
+
+logger = logging.getLogger(__name__)
 
 
 class DocxBuilder(Builder):
@@ -66,17 +73,17 @@ class DocxBuilder(Builder):
     def write(self, *ignored):
         docnames = self.env.all_docs
 
-        self.info(bold('preparing documents... '), nonl=True)
+        logger.info(bold('preparing documents... '), nonl=True)
         self.prepare_writing(docnames)
-        self.info('done')
+        logger.info('done')
 
-        self.info(bold('assembling single document... '), nonl=True)
+        logger.info(bold('assembling single document... '), nonl=True)
         doctree = self.assemble_doctree()
-        self.info()
-        self.info(bold('writing... '), nonl=True)
+        logger.info('')
+        logger.info(bold('writing... '), nonl=True)
         docname = "%s-%s" % (self.config.project, self.config.version)
         self.write_doc(docname, doctree)
-        self.info('done')
+        logger.info('done')
 
     def write_doc(self, docname, doctree):
         destination = StringOutput(encoding='utf-8')
