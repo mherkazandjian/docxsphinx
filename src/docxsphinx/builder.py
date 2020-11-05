@@ -94,7 +94,7 @@ class DocxBuilder(Builder):
         try:
             self.writer.save(outfilename)
         except (IOError, OSError) as err:
-            self.warn("error writing file %s: %s" % (outfilename, err))
+            logger.warning("error writing file %s: %s" % (outfilename, err))
 
     def finish(self):
         pass
