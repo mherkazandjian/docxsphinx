@@ -7,7 +7,8 @@ testenv:
 	# .. todo:: and it is better not to pollute the actual dev environment
 
 tests:
-	sphinx-build -b docx source build
+	python setup.py install --force
+	pytest -v tests --tb=no
 
 clean:
 	@rm -fvr examples/**/build*
