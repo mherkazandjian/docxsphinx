@@ -1,6 +1,6 @@
 # DocxSphinx
 
-[![CircleCI](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/mher/docker-image.svg?style=svg)](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/mher/docxsphinx)
+[![CircleCI](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master.svg?style=svg)](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master)
 
 Introduction
 ============
