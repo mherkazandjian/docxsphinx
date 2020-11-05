@@ -15,4 +15,4 @@ install:
 
 script:
   - python setup.py install
-  - pytest -v tests/
+  - pytest -v -s tests/
