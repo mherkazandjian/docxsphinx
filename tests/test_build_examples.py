@@ -9,7 +9,9 @@ import pytest
                              ('examples/sample_1', 'example-0.1.docx'),
                              ('examples/sample_2', 'my_foo_project-0.0.0.docx'),
                              ('examples/sample_3', 'my_foo_project-0.0.0.docx'),
-                             ('examples/sample_4', 'my_foo_project-0.0.0.docx')
+                             ('examples/sample_4', 'my_foo_project-0.0.0.docx'),
+                             ('examples/sample_5', 'example-0.1.docx'),
+                             ('examples/sample_6', 'example-0.1.docx')
                          ])
 def test_examples(example_dir, expected_docx_filename):
     build_dir = os.path.join(example_dir, 'build')
