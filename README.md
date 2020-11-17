@@ -67,6 +67,20 @@ To debug the build process
  
     python -m pdb $(which sphinx-build) -b docx /path/to/src/dir /path/to/build/dir OTHER_SPHINX_OPTIONS_IF_ANY
 
+To produce the ``.docx`` of any of the example files using the current
+development docxsphinx source, e.g. the sphixn project ``sample_2``:
+
+    cd examples/sample_2
+    PYTHONPATH=../../src:$PYTHONPATH make docx -B
+
+To profile e.g. ``sample_2``. Profiling is useful to see which sections
+of the code are visited in the module ``src/docxsphinx/writer.py``
+
+     PYTHONPATH=../../src:$PYTHONPATH python3 -m cProfile -s calls \
+           $(which sphinx-build) -M docx \
+           source build/docx/ | grep writer.py | awk '{print $6}' \
+           | sort > calls
+
 API
 ===
 see also 
