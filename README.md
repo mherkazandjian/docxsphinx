@@ -24,7 +24,7 @@ To install the development version
    ````
    pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
 
-   ````  
+   ````
 
 Alternatively the repository can be cloned and installed locally
 
@@ -70,6 +70,12 @@ to the end of `conf.py` (or anywhere in the file)
 
 Development
 ===========
+
+To run the test suite, execute:
+
+    python setup.py test
+
+
 To debug the build process
  
     python -m pdb $(which sphinx-build) -b docx /path/to/src/dir /path/to/build/dir OTHER_SPHINX_OPTIONS_IF_ANY
