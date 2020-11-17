@@ -15,9 +15,16 @@ Installation
 ============
 The latest bleeding edge version can be installed through
 
-   ```` 
-   pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
    ````
+   pip install docxsphinx
+   ````
+
+To install the development version
+
+   ````
+   pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
+
+   ````  
 
 Alternatively the repository can be cloned and installed locally
 
