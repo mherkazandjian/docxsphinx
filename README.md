@@ -71,10 +71,24 @@ to the end of `conf.py` (or anywhere in the file)
 Development
 ===========
 
-To run the test suite, execute:
+Setup the development environment (make sure that pipenv is installed):
+
+    pipenv install --dev        # creates the .venv dir
+    pipenv shell                # set the environment to use the venv 
+    python setup.py install
+    make tests -B
+
+whenever changes are made the package needs to be re-installed through:
+
+    python setup.py install
+    
+since the tests are run using the commands ``sphinx-build`` that needs to be
+in the environment paths.
+
+The tests can also be run using (but this is not recommended and will be
+removed in the future):
 
     python setup.py test
-
 
 To debug the build process
  
