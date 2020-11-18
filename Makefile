@@ -12,3 +12,6 @@ tests: clean_tests
 
 clean_tests:
 	@rm -fvr examples/**/build*
+
+clean: clean_tests
+	@rm -fvr build _build dist *.log .egg*

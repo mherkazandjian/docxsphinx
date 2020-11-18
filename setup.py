@@ -6,16 +6,15 @@ from setuptools.command.test import test as TestCommand
 
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
-version = '1.0.0'
-long_description = \
-        open(os.path.join(BASEDIR, "src", "README.md")).read() + \
-        open(os.path.join(BASEDIR, "src", "TODO.txt")).read()
+version = '1.0.4'
+long_description = open(os.path.join(BASEDIR, "README.md")).read()
 
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
-    #"Development Status :: 3 - Alpha",
-    #"Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3",
     "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Topic :: Office/Business :: Office Suites",
