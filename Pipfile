@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 docutils = "==0.15"
-python-docx = ">=0.8.6"
-Sphinx = "==3.3.0"
+python-docx = ">=0.8.0"
+Sphinx = ">=3.0.0"
 
 [dev-packages]
 pytest = "==6.1.2"

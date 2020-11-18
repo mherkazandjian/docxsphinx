@@ -1,5 +1,7 @@
 include MANIFEST.in
+include requirements.txt
 recursive-include examples/source *.*
 recursive-include src *.py *.txt
 recursive-include src/docxsphinx/docx *
+
 
