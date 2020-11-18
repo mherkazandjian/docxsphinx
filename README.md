@@ -86,8 +86,9 @@ development docxsphinx source, e.g. the sphixn project ``sample_2``:
     cd examples/sample_2
     PYTHONPATH=../../src:$PYTHONPATH make docx -B
 
-To profile e.g. ``sample_2``. Profiling is useful to see which sections
-of the code are visited in the module ``src/docxsphinx/writer.py``
+Profiling is useful to see which sections of the code are 
+visited in the module ``src/docxsphinx/writer.py``. For example
+to profile ``sample_2``, the following pattern can be used:
 
      PYTHONPATH=../../src:$PYTHONPATH python3 -m cProfile -s calls \
            $(which sphinx-build) -M docx \

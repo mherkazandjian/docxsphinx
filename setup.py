@@ -52,7 +52,7 @@ class PyTest(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
@@ -72,9 +72,7 @@ setup(
      packages=find_packages('src'),
      package_dir={'': 'src'},
      install_requires=read_requirements(),
-     extras_require=dict(
-         test=read_requirements(tests=True)
-     ),
+     extras_require=dict(test=read_requirements(tests=True)),
      tests_require=read_requirements(tests=True),
      cmdclass={'test': PyTest},
      zip_safe=False,
