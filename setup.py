@@ -66,7 +66,7 @@ setup(
      classifiers=classifiers,
      keywords=['sphinx', 'extension', 'builder', 'docx', 'OpenXML'],
      author='Mher Kazandjian, Hugo Buddelmeijer',
-     author_email='mherkazandjian@gmail.com, blackshift@gmail.com',
+     author_email='mherkazandjian@gmail.com, hugo@buddelmeijer.nl',
      url='https://github.com/mherkazandjian/docxsphinx',
      license='MIT',
      packages=find_packages('src'),
