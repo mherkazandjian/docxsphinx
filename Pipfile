@@ -1,5 +1,5 @@
 [[source]]
-url = "https://pypi.org/simple"
+url = "https://pypi.org/project/docxsphinx/"
 verify_ssl = true
 name = "pypi"
 
