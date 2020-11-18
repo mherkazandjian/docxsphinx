@@ -6,7 +6,7 @@ from setuptools.command.test import test as TestCommand
 
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
-version = '1.0.0'
+version = '1.0.1'
 long_description = open(os.path.join(BASEDIR, "README.md")).read()
 
 classifiers = [
