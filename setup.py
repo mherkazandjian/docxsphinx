@@ -30,14 +30,15 @@ def read_requirements(tests=False):
     :param tests:
     :return:
     """
-    pkgs = list(map(str.strip, open('requirements.txt').readlines()))
+    pkgs = list(filter(lambda x: x != '', map(str.strip, open('requirements.txt').readlines())))
 
     if tests:
         retval = list(filter(lambda pkg: 'pytest' in pkg, pkgs))
     else:
-        retval = list(filter(lambda pkg: 'pytest' not in pkg, pkgs))
+        retval = list(filter(lambda pkg: not 'pytest' in pkg, pkgs))
 
-    return list(filter(lambda x: x is not '', retval))
+    return retval
+
 
 class PyTest(TestCommand):
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
