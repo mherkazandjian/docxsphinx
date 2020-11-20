@@ -134,6 +134,11 @@ class DocxTranslator(nodes.NodeVisitor):
         self.list_style = []
         self.list_level = 0
 
+        self.desc_type = []
+        self.desc_level = 0
+
+        self.first_param = False
+
         # TODO: And what about sectionlevel?
         self.sectionlevel = 0
 
@@ -266,27 +271,31 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc(self, node):
         dprint()
-        pass
+        self.desc_type.append(node['objtype'])
+        # Description lists are also like lists
+        self.desc_level += 1
 
     def depart_desc(self, node):
         dprint()
-        pass
+        self.desc_level -= 1
+        self.desc_type.pop()
 
     def visit_desc_signature(self, node):
         dprint()
-        raise nodes.SkipNode
+        curloc = self.current_state.location
+        self.current_paragraph = curloc.add_paragraph(style='MacroText')
+        self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level - 1)
 
     def depart_desc_signature(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_desc_name(self, node):
         dprint()
-        pass
+        self.strong = True
 
     def depart_desc_name(self, node):
         dprint()
-        pass
+        self.strong = False
 
     def visit_desc_addname(self, node):
         dprint()
@@ -306,7 +315,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_returns(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text(' -> ')
 
     def depart_desc_returns(self, node):
@@ -315,33 +323,28 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_parameterlist(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('(')
-        # self.first_param = 1
+        self.add_text('(')
+        self.first_param = True
 
     def depart_desc_parameterlist(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(')')
+        self.add_text(')')
 
     def visit_desc_parameter(self, node):
         dprint()
-        raise nodes.SkipNode
-        # if not self.first_param:
-        #     self.add_text(', ')
-        # else:
-        #     self.first_param = 0
-        # self.add_text(node.astext())
-        # raise nodes.SkipNode
+        if not self.first_param:
+            self.add_text(', ')
+
+    def depart_desc_parameter(self, node):
+        self.first_param = False
+        dprint()
 
     def visit_desc_optional(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text('[')
 
     def depart_desc_optional(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text(']')
 
     def visit_desc_annotation(self, node):
@@ -362,12 +365,10 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_desc_content(self, node):
         dprint()
-        raise nodes.SkipNode
         # self.add_text('\n')
 
     def depart_desc_content(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_figure(self, node):
         # FIXME: figure text become normal paragraph instead of caption.
@@ -695,6 +696,10 @@ class DocxTranslator(nodes.NodeVisitor):
             logger.warning(msg)
             style = None
 
+        # Bulleted lists do not seem to respect left_indent, so need to use another style.
+        if self.desc_level:
+            style = None
+
         curloc = self.current_state.location
         if isinstance(curloc, _Cell):
             if len(curloc.paragraphs) == 1:
@@ -709,6 +714,10 @@ class DocxTranslator(nodes.NodeVisitor):
                 self.current_paragraph = curloc.add_paragraph(style=style)
         else:
             self.current_paragraph = curloc.add_paragraph(style=style)
+
+        # Fix parameter lists
+        if self.desc_level:
+            self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level + 1)
 
     def depart_list_item(self, node):
         dprint()
@@ -756,28 +765,29 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_field(self, node):
         dprint()
-        pass
+        self.desc_type.append('field')
+        curloc = self.current_state.location
+        self.current_paragraph = curloc.add_paragraph()
+        self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level)
 
     def depart_field(self, node):
         dprint()
-        pass
+        self.desc_type.pop()
 
     def visit_field_name(self, node):
         dprint()
-        raise nodes.SkipNode
+        self.strong = True
 
     def depart_field_name(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(':')
+        self.add_text(": ")
+        self.strong = False
 
     def visit_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def depart_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_centered(self, node):
         dprint()
@@ -856,7 +866,7 @@ class DocxTranslator(nodes.NodeVisitor):
 
         # Unlike with Lists, there will not be a visit to paragraph in a
         # literal block, so we *must* create the paragraph here.
-        style = 'Preformatted Text'
+        style = 'MacroText'
         try:
             # Check whether the style is part of the document.
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
@@ -916,6 +926,9 @@ class DocxTranslator(nodes.NodeVisitor):
         if 'List' in self.current_paragraph.style.name and not self.current_paragraph.text:
             # This is the first paragraph in a list item, so do not create another one.
             pass
+        elif self.desc_type and self.desc_type[-1] == 'field':
+            # The paragraph has already been created by visit_field_name.
+            pass
         elif isinstance(curloc, _Cell):
             if len(curloc.paragraphs) == 1:
                 if not curloc.paragraphs[0].text:
@@ -931,6 +944,8 @@ class DocxTranslator(nodes.NodeVisitor):
             self.current_paragraph.paragraph_format.left_indent = 0
         else:
             self.current_paragraph = curloc.add_paragraph()
+            if self.desc_level > 0:
+                self.current_paragraph.paragraph_format.left_indent = Cm(self.desc_level)
 
     def depart_paragraph(self, node):
         dprint()
@@ -983,11 +998,19 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_literal_emphasis(self, node):
         dprint()
-        # self.add_text('*')
+        self.emphasis = True
 
     def depart_literal_emphasis(self, node):
         dprint()
-        # self.add_text('*')
+        self.emphasis = False
+
+    def visit_literal_strong(self, node):
+        dprint()
+        self.strong = True
+
+    def depart_literal_strong(self, node):
+        dprint()
+        self.strong = False
 
     def visit_strong(self, node):
         dprint()
@@ -1103,9 +1126,10 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         # TODO: FIX Dirty hack / kludge to set table style.
         # Use proper directives or something like that
-        comment = node[0]
-        if 'DocxTableStyle' in comment:
-            self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
+        if len(node):
+            comment = node[0]
+            if 'DocxTableStyle' in comment:
+                self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
         raise nodes.SkipNode
 
     def visit_meta(self, node):
@@ -1122,9 +1146,6 @@ class DocxTranslator(nodes.NodeVisitor):
     def unknown_visit(self, node):
         dprint()
         raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
 
     def unknown_departure(self, node):
         dprint()
-        raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)

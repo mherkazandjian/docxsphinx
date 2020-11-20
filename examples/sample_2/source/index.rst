@@ -14,12 +14,17 @@ Welcome to my_foo_project's documentation!
 Sphinx Tutorial
 ===============
 
+.. automodule:: mymodule
+    :members:
+
 Getting Set Up
 **************
 
 Philosophy
 ----------
 
+.. automodule:: mymodule
+    :members:
 
 
 Indices and tables
