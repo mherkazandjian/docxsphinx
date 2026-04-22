@@ -969,6 +969,42 @@ def test_footnote_body_preserves_inline_bold(
     assert 'Plain' in xml and 'bold' in xml and 'more' in xml
 
 
+def test_empty_comment_does_not_raise_index_error(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """Regression for GitHub issues #33 and #55 — ``visit_comment`` used to
+    index ``node[0]`` unconditionally, raising ``IndexError`` on an empty
+    ``.. \\n`` comment (e.g. the one Sphinx's ``sphinx-quickstart`` inserts
+    at the top of ``conf.py`` during env serialisation). Walking a doctree
+    with a child-less ``comment`` node must now be a silent no-op."""
+    doctree = _blank_document()
+    doctree += nodes.comment()  # empty — no children
+    doc = _walk_doctree(doctree, fake_builder)
+    # Nothing should be emitted for the comment itself.
+    assert doc.paragraphs == [] or all(not p.text for p in doc.paragraphs)
+
+
+def test_comment_docxtablestyle_override_still_works(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """The ``DocxTableStyle <name>`` comment-directive hack must keep
+    working after the IndexError fix."""
+    doctree = _blank_document()
+    comment = nodes.comment('', 'DocxTableStyle Light Grid Accent 1')
+    doctree += comment
+    # Build a minimal table afterwards to observe the table_style attribute.
+    # (Direct assertion on translator state is cleaner — run the walker and
+    # inspect.)
+    from docx import Document
+
+    from docxsphinx.writer import DocxTranslator
+
+    container = Document()
+    tr = DocxTranslator(doctree, fake_builder, container)
+    doctree.walkabout(tr)
+    assert tr.current_state.table_style == 'Light Grid Accent 1'
+
+
 def test_generic_admonition_uses_custom_title(
     fake_builder: SimpleNamespace,
 ) -> None:

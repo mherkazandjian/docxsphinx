@@ -1610,12 +1610,18 @@ class DocxTranslator(nodes.NodeVisitor):
         # self.add_text('<SYSTEM MESSAGE: %s>' % node.astext())
 
     def visit_comment(self, node):
+        """Consume RST ``.. comment`` nodes.
+
+        A long-standing hack lets a comment carry ``DocxTableStyle <name>`` to
+        override the per-document table style. Empty ``.. \\n`` comments
+        previously raised ``IndexError`` when indexing ``node[0]`` — see GitHub
+        issues #33 and #55. Use ``astext()`` which tolerates child-less
+        comments.
+        """
         dprint()
-        # TODO: FIX Dirty hack / kludge to set table style.
-        # Use proper directives or something like that
-        comment = node[0]
-        if 'DocxTableStyle' in comment:
-            self.current_state.table_style = comment.split('DocxTableStyle')[-1].strip()
+        text = node.astext()
+        if 'DocxTableStyle' in text:
+            self.current_state.table_style = text.split('DocxTableStyle')[-1].strip()
         raise nodes.SkipNode
 
     def visit_meta(self, node):
