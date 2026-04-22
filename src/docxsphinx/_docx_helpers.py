@@ -7,6 +7,13 @@ state so they can be unit-tested in isolation.
 """
 from __future__ import annotations
 
+import logging
+import shutil
+import subprocess
+import tempfile
+import zipfile
+from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from docx.opc.constants import CONTENT_TYPE as CT
@@ -15,6 +22,10 @@ from docx.opc.packuri import PackURI
 from docx.opc.part import XmlPart
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
+
+logger = logging.getLogger(__name__)
+
+OOXML_MATH_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/math'
 
 if TYPE_CHECKING:
     from docx.document import Document
@@ -270,7 +281,83 @@ def add_footnote_reference(paragraph: Paragraph, footnote_id: int) -> OxmlElemen
     return run
 
 
+def _pandoc_on_path() -> bool:
+    return shutil.which('pandoc') is not None
+
+
+@lru_cache(maxsize=256)
+def _latex_to_omml_bytes(latex: str, display: bool) -> bytes | None:
+    """Convert a LaTeX math string to OMML via pandoc. Returns the serialised
+    ``<m:oMath>`` (inline) or ``<m:oMathPara>`` (display) element bytes, or
+    ``None`` if pandoc isn't available or the conversion fails.
+
+    Cached at byte level — we cache bytes rather than elements because lxml
+    elements can only have one parent at a time, so callers must re-parse
+    on each use.
+    """
+    if not _pandoc_on_path():
+        return None
+    wrapped = f'\\[{latex}\\]' if display else f'${latex}$'
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / 'math.docx'
+        result = subprocess.run(
+            ['pandoc', '-f', 'latex', '-t', 'docx', '-o', str(out)],
+            input=wrapped, capture_output=True, text=True, check=False,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                'pandoc failed to convert LaTeX to OMML; falling back. '
+                'latex=%r stderr=%r', latex[:80], result.stderr[:200],
+            )
+            return None
+        try:
+            with zipfile.ZipFile(out) as zf:
+                xml = zf.read('word/document.xml')
+        except (zipfile.BadZipFile, KeyError):
+            return None
+    import re
+    wanted = 'oMathPara' if display else 'oMath'
+    # Greedy enough to capture the balanced element; math elements are
+    # always balanced because pandoc generates well-formed docx.
+    pattern = rf'<m:{wanted}(?:\s[^>]*)?>.*?</m:{wanted}>'
+    match = re.search(pattern, xml.decode(), re.DOTALL)
+    if not match:
+        return None
+    return match.group(0).encode()
+
+
+def latex_to_omml(latex: str, display: bool = False):
+    """Convert a LaTeX math string to an OMML element ready for insertion
+    into a python-docx document.
+
+    Returns an ``lxml`` element (``<m:oMath>`` for inline, ``<m:oMathPara>``
+    for display math) that callers can append to a paragraph's ``<w:p>``.
+    Returns ``None`` when pandoc is unavailable or the conversion fails —
+    callers should fall back to rendering the LaTeX as plain text.
+
+    Each call re-parses from cached bytes so the caller owns a fresh
+    element (lxml forbids attaching the same element under two parents).
+    """
+    blob = _latex_to_omml_bytes(latex, display)
+    if blob is None:
+        return None
+    # The element extracted from the source docx uses the ``m:`` namespace
+    # prefix without an ``xmlns:m`` declaration of its own (the declaration
+    # lived on the document root). Stamp the namespace on the root element
+    # so parse_xml can resolve prefixes standalone.
+    text = blob.decode()
+    root_tag = 'oMathPara' if display else 'oMath'
+    text = text.replace(
+        f'<m:{root_tag}', f'<m:{root_tag} xmlns:m="{OOXML_MATH_NS}"', 1,
+    )
+    try:
+        return parse_xml(text.encode())
+    except Exception:  # noqa: BLE001 — defensive; parse failures fall back
+        return None
+
+
 __all__ = [
+    'OOXML_MATH_NS',
     'add_bookmark',
     'add_footnote',
     'add_footnote_reference',
@@ -278,4 +365,5 @@ __all__ = [
     'add_internal_hyperlink',
     'add_seq_field',
     'ensure_footnotes_part',
+    'latex_to_omml',
 ]

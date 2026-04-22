@@ -969,6 +969,79 @@ def test_footnote_body_preserves_inline_bold(
     assert 'Plain' in xml and 'bold' in xml and 'more' in xml
 
 
+def test_inline_math_renders_as_omml_in_current_paragraph(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """``:math:`E = mc^2``` → a ``<m:oMath>`` element appended to the
+    containing paragraph, not a new paragraph of its own."""
+
+    doctree = _blank_document()
+    para = nodes.paragraph()
+    para += nodes.Text('Einstein: ')
+    math = nodes.math()
+    math += nodes.Text('E = mc^2')
+    para += math
+    para += nodes.Text('.')
+    doctree += para
+
+    doc = _walk_doctree(doctree, fake_builder)
+    # One paragraph — the math goes inline, not into its own block.
+    assert len(doc.paragraphs) == 1, [p.text for p in doc.paragraphs]
+    M = 'http://schemas.openxmlformats.org/officeDocument/2006/math'
+    omath = doc.paragraphs[0]._p.findall(f'.//{{{M}}}oMath')
+    assert len(omath) == 1, 'expected one <m:oMath> inside the paragraph'
+    # The trailing '.' text run is still present too.
+    assert 'Einstein' in doc.paragraphs[0].text
+    assert '.' in doc.paragraphs[0].text
+
+
+def test_display_math_block_renders_as_oMathPara_in_new_paragraph(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """``.. math::`` → a fresh paragraph containing ``<m:oMathPara>``."""
+    doctree = _blank_document()
+    mb = nodes.math_block()
+    mb += nodes.Text(r'\sum_{i=1}^n i = \frac{n(n+1)}{2}')
+    doctree += mb
+
+    doc = _walk_doctree(doctree, fake_builder)
+    M = 'http://schemas.openxmlformats.org/officeDocument/2006/math'
+    paras_with_math = [
+        p for p in doc.paragraphs
+        if p._p.findall(f'.//{{{M}}}oMathPara')
+    ]
+    assert len(paras_with_math) == 1, (
+        'expected exactly one paragraph with <m:oMathPara>'
+    )
+
+
+def test_math_falls_back_to_monospace_when_pandoc_missing(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """If pandoc isn't on PATH, the writer emits the raw LaTeX as a
+    Consolas-styled run instead of dropping or crashing."""
+    from unittest.mock import patch
+
+    doctree = _blank_document()
+    para = nodes.paragraph()
+    math = nodes.math()
+    math += nodes.Text('alpha + beta')
+    para += math
+    doctree += para
+
+    with patch('docxsphinx._docx_helpers.shutil.which', return_value=None):
+        # Also bypass the lru_cache so the mock actually fires.
+        from docxsphinx._docx_helpers import _latex_to_omml_bytes
+        _latex_to_omml_bytes.cache_clear()
+        doc = _walk_doctree(doctree, fake_builder)
+
+    # LaTeX text made it into the document as plain text, monospace font.
+    runs = [r for p in doc.paragraphs for r in p.runs]
+    latex_runs = [r for r in runs if r.text == 'alpha + beta']
+    assert latex_runs, [r.text for r in runs]
+    assert latex_runs[0].font.name == 'Consolas', latex_runs[0].font.name
+
+
 def test_empty_comment_does_not_raise_index_error(
     fake_builder: SimpleNamespace,
 ) -> None:

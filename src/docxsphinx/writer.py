@@ -29,6 +29,7 @@ from docxsphinx._docx_helpers import (
     add_internal_hyperlink,
     add_seq_field,
     ensure_footnotes_part,
+    latex_to_omml,
 )
 
 logger = logging.getLogger(__name__)
@@ -1628,6 +1629,58 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         raise nodes.SkipNode
         # only valid for HTML
+
+    # -- math -------------------------------------------------------------
+    # Renders inline ``:math:`` and block ``.. math::`` / MyST ``$…$`` /
+    # ``$$…$$`` via pandoc's LaTeX → OMML conversion. The OMML element is
+    # inserted directly into the current paragraph (inline) or a fresh
+    # paragraph (display). When pandoc is unavailable or the LaTeX fails
+    # to convert, the raw LaTeX source renders as a monospace fallback so
+    # no content is silently dropped.
+
+    def _render_math_fallback(self, latex: str, *, inline: bool) -> None:
+        """Emit LaTeX source as a monospace run (or new paragraph for display)."""
+        if inline:
+            if self.current_paragraph is None:
+                self.current_paragraph = self.current_state.location.add_paragraph()
+            run = self.current_paragraph.add_run(latex)
+        else:
+            para = self.current_state.location.add_paragraph()
+            run = para.add_run(latex)
+        run.font.name = CODE_FONT_NAME
+        logger.warning(
+            'math rendered as plain LaTeX (pandoc unavailable or conversion failed): %r',
+            latex[:80],
+        )
+
+    def visit_math(self, node):
+        dprint()
+        latex = node.astext()
+        omml = latex_to_omml(latex, display=False)
+        if omml is None:
+            self._render_math_fallback(latex, inline=True)
+            raise nodes.SkipNode
+        if self.current_paragraph is None:
+            self.current_paragraph = self.current_state.location.add_paragraph()
+        self.current_paragraph._p.append(omml)
+        raise nodes.SkipNode
+
+    def depart_math(self, node):
+        dprint()
+
+    def visit_math_block(self, node):
+        dprint()
+        latex = node.astext()
+        omml = latex_to_omml(latex, display=True)
+        if omml is None:
+            self._render_math_fallback(latex, inline=False)
+            raise nodes.SkipNode
+        para = self.current_state.location.add_paragraph()
+        para._p.append(omml)
+        raise nodes.SkipNode
+
+    def depart_math_block(self, node):
+        dprint()
 
     def visit_raw(self, node):
         """Drop raw content — except toggle the strike flag on HTML

@@ -261,6 +261,30 @@ def test_rst_option_list_end_to_end(
     assert sigs == ['-h, --help', '-o FILE, --out=FILE'], sigs
 
 
+def test_rst_math_renders_as_omml(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    """Full RST pipeline: ``:math:`` role → inline ``<m:oMath>``;
+    ``.. math::`` directive → ``<m:oMathPara>`` in its own paragraph."""
+    src = r"""
+Mass-energy: :math:`E = mc^2`.
+
+.. math::
+
+   \sum_{i=1}^n i = \frac{n(n+1)}{2}
+"""
+    doc = translator_factory(src, 'rst')
+    M = 'http://schemas.openxmlformats.org/officeDocument/2006/math'
+    all_oMath = sum(
+        len(p._p.findall(f'.//{{{M}}}oMath')) for p in doc.paragraphs
+    )
+    all_oMathPara = sum(
+        len(p._p.findall(f'.//{{{M}}}oMathPara')) for p in doc.paragraphs
+    )
+    assert all_oMath >= 2, all_oMath  # one inline + one inside oMathPara
+    assert all_oMathPara == 1, all_oMathPara
+
+
 def test_rst_footnotes_roundtrip_via_footnotes_part(
     translator_factory: Callable[[str, str], DocumentType],
     tmp_path,

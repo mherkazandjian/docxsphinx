@@ -9,13 +9,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [2.1.0] — _unreleased_
 
-Adds a reverse pipeline (`.docx` → Markdown / RST) and the research
-harness that uses it to identify forward-direction OOXML idioms worth
-matching. No changes to the forward builder's behaviour; the forward
-suite still passes identically.
+Adds a reverse pipeline (`.docx` → Markdown / RST), LaTeX math
+rendering via pandoc's OMML conversion, and the research harness that
+uses the reverse pipeline to identify forward-direction OOXML idioms
+worth matching.
 
 ### Added
 
+- **LaTeX math rendering (closes #11).** `math` (inline `:math:` role,
+  MyST `$...$`) and `math_block` (`.. math::` directive, MyST `$$...$$`,
+  AMS environments like `\begin{align}...\end{align}`) nodes now render
+  as native Word Office Math Markup Language (OMML) — editable in
+  Word's equation editor, copy-pasteable to other Word documents.
+  Implementation: `latex_to_omml` helper in
+  `src/docxsphinx/_docx_helpers.py` invokes pandoc as a subprocess
+  (`pandoc -f latex -t docx`) on the LaTeX snippet, extracts the
+  `<m:oMath>` / `<m:oMathPara>` element from the resulting document,
+  and injects it into the current / new paragraph of the target
+  document. Results are cached per `(latex, display)` pair via
+  `functools.lru_cache` so repeated equations convert only once.
+  Falls back to rendering the raw LaTeX as a monospace `Consolas` run
+  (with a warning) when pandoc is unavailable. See
+  `examples/md_math/` for 10 inline + 5 display equations exercising
+  fractions, sums, piecewise functions, matrices, and AMS `align`.
 - **`docxsphinx.reverse` package** — wraps pandoc as a subprocess to
   convert `.docx` → Markdown or reStructuredText. Public API:
   `docx_to_markdown(path, flavour='gfm', extract_media=…)` and

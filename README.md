@@ -41,10 +41,11 @@ release notes.
 | Internal references (`:ref:`, `[text](#id)`, `(label)=`) | `w:hyperlink` with `w:anchor` targeting auto-emitted section bookmarks |
 | Fenced code blocks (python, bash, JSON, …) | Pygments-coloured monospace runs, line breaks via `w:br` |
 | Footnotes and citations with inline formatting | Word-native `word/footnotes.xml` part + superscripted references |
+| LaTeX math (`:math:`, `.. math::`, MyST `$…$` / `$$…$$`, AMS environments) | Native Office Math Markup Language (OMML) via pandoc; editable in Word's equation editor |
 
-Features not yet implemented (tracked on the roadmap): math / LaTeX
-equations, versionadded/deprecated directives, Word-native TOC field,
-native form-field checkboxes, page headers/footers/breaks.
+Features not yet implemented (tracked on the roadmap):
+versionadded/deprecated directives, Word-native TOC field, native
+form-field checkboxes, page headers/footers/breaks.
 
 ## Installation
 
@@ -206,6 +207,7 @@ Fifteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 | | `md_links` — external URLs and intra-doc anchors |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` / all types |
 | | `md_mixed` — RST and MD source files in one project |
+| | `md_math` — LaTeX equations → OMML (inline, display, AMS environments) |
 | | **[`md_showcase`](examples/md_showcase/) — every feature in one file** |
 
 Build any example:
