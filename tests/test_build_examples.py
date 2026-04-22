@@ -36,6 +36,7 @@ EXAMPLES = [
     ('md_links', 'md_links_project-0.1.docx'),
     ('md_admonitions', 'md_admonitions_project-0.1.docx'),
     ('md_mixed', 'md_mixed_project-0.1.docx'),
+    ('md_showcase', 'md_showcase_project-0.1.docx'),
 ]
 
 

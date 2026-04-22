@@ -97,6 +97,7 @@ The `examples/` directory contains ready-to-build Sphinx projects:
 | | `md_links` — external URLs and intra-doc anchors |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` |
 | | `md_mixed` — RST and MD source files in one project |
+| | **`md_showcase` — every feature in one file** |
 
 Build any example:
 
