@@ -7,11 +7,20 @@ name: Release
 # repository pointing at the "pypi" environment below and this workflow
 # file name (release.yml).  See:
 #   https://docs.pypi.org/trusted-publishers/
+#
+# Dry-run:
+#
+#   gh workflow run release.yml --ref main
+#
+# A manual (workflow_dispatch) run executes only the `build` job — sdist,
+# wheel, twine check, artifact upload.  The `publish` job is gated on the
+# ref being a version tag, so a dry run cannot reach PyPI.
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,6 +58,9 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
+    # Gate on a version tag so workflow_dispatch is a dry-run only —
+    # a manual trigger cannot publish to PyPI.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: pypi
