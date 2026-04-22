@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docxsphinx"
-version = "2.0.0"
+version = "2.1.0"
 description = "Sphinx builder that emits Microsoft Word (.docx) from reStructuredText."
 readme = "README.md"
 license = { text = "MIT" }
@@ -39,6 +39,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# `docxsphinx.reverse` requires a `pandoc` binary on $PATH — no Python-
+# level dependency is added here, the extras bucket exists so users can
+# signal intent (`pip install docxsphinx[reverse]`) and so a future
+# pure-Python fallback can be dropped in without breaking the install
+# interface.
+reverse = []
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4",
@@ -56,6 +62,10 @@ Source = "https://github.com/mherkazandjian/docxsphinx"
 
 [project.entry-points."sphinx.builders"]
 docx = "docxsphinx"
+
+[project.scripts]
+docx2md = "docxsphinx.reverse.cli:main_md"
+docx2rst = "docxsphinx.reverse.cli:main_rst"
 
 [tool.setuptools.packages.find]
 where = ["src"]

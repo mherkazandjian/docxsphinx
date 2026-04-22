@@ -32,7 +32,14 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build shell test test-smoke test-unit test-integration test-e2e test-fast test-all lint cov example profile release-check clean distclean
+.PHONY: help build shell test test-smoke test-unit test-integration test-e2e test-fast test-all lint cov example profile roundtrip release-check clean distclean
+
+# roundtrip corpus defaults: `make roundtrip` analyses the committed
+# fixture set; `make roundtrip CORPUS=corpus` analyses the user's private
+# corpus (./examples/corpus/, gitignored).  Reports always land in
+# examples/corpus/reports/ which is gitignored.
+CORPUS  ?= corpus_samples
+REPORTS ?= examples/corpus/reports
 
 help:
 	@awk 'BEGIN{FS=":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -82,6 +89,9 @@ ifeq ($(EXAMPLE_DIR),)
 	$(error set N=<sample-number> or DIR=<example-dir>, e.g. make profile N=2 or make profile DIR=md_basic)
 endif
 	$(RUN) bash -c "cd examples/$(EXAMPLE_DIR) && rm -rf build && PYTHONPATH=/workspace/src python -m cProfile -s calls \$$(which sphinx-build) -M docx source build/docx/ 2>&1 | grep writer.py | awk '{print \$$6}' | sort | uniq -c | sort -rn | head -30"
+
+roundtrip: ## Roundtrip .docx files through pandoc→MD→docxsphinx; diff vs original (CORPUS=corpus_samples|corpus)
+	$(RUN) python tools/roundtrip.py examples/$(CORPUS) $(REPORTS)
 
 release-check: ## Build sdist+wheel and run twine check
 	$(RUN) python -m build

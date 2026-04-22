@@ -11,6 +11,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         git \
         make \
+        pandoc \
  && rm -rf /var/lib/apt/lists/*
 
 ARG UID=1000

@@ -7,6 +7,72 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.1.0] — _unreleased_
+
+Adds a reverse pipeline (`.docx` → Markdown / RST) and the research
+harness that uses it to identify forward-direction OOXML idioms worth
+matching. No changes to the forward builder's behaviour; the forward
+suite still passes identically.
+
+### Added
+
+- **`docxsphinx.reverse` package** — wraps pandoc as a subprocess to
+  convert `.docx` → Markdown or reStructuredText. Public API:
+  `docx_to_markdown(path, flavour='gfm', extract_media=…)` and
+  `docx_to_rst(path, extract_media=…)`. Module lives at
+  `src/docxsphinx/reverse/`. Exceptions: `PandocNotFoundError`,
+  `PandocVersionError`, `PandocConversionError` all subclass
+  `ReverseError`. Minimum pandoc version enforced at 2.0.
+- **`docx2md` and `docx2rst` console scripts** — registered via
+  `[project.scripts]`. Usage: `docx2md input.docx [-o output.md]
+  [--extract-media dir] [--format gfm|commonmark|markdown|markdown_strict]`.
+  `docx2rst` always emits RST.
+- **`[project.optional-dependencies].reverse`** — empty extras bucket
+  (pandoc is a system binary, not a pip dep) that lets users declare
+  intent via `pip install "docxsphinx[reverse]"` and reserves the slot
+  for a future pure-Python fallback.
+- **`tools/roundtrip.py`** — research harness. For each `.docx` in an
+  input directory: runs `pandoc -t gfm` to produce Markdown, feeds that
+  Markdown through docxsphinx's forward path, and diffs the two
+  `word/document.xml` trees. Emits per-doc + aggregate reports.
+- **`make roundtrip`** Make target: `make roundtrip` (against
+  `examples/corpus_samples/`) or `make roundtrip CORPUS=corpus` (against
+  the user's private gitignored `examples/corpus/`).
+- **`examples/corpus_samples/`** — tiny committed fixture set. Currently
+  contains `pandoc_md_basic.docx` as a non-docxsphinx reference for the
+  harness to compare against. Expandable with LibreOffice / Word /
+  Google-Docs-authored docs.
+- **`examples/corpus/`** — gitignored drop-zone for private real-world
+  corpora (only the README is tracked).
+- **`docs/roundtrip-findings.md`** — Phase A deliverable. Current
+  findings: lists should emit `w:numPr`/`w:numId`/`w:ilvl` (not bare
+  paragraph styles); inline code should carry `w:rStyle w:val="VerbatimChar"`;
+  body paragraphs should differentiate `FirstParagraph` / `BodyText` /
+  `Compact`; runs should include `w:bCs`/`w:iCs` complex-script variants.
+- **`tests/test_reverse.py`** — 10+ tests across unit (mocked pandoc),
+  integration (real pandoc + real docxsphinx-built `.docx`), and e2e
+  (console-script subprocess). `_ensure_showcase_built()` helper builds
+  `examples/md_showcase/` on demand so the tests are self-contained.
+
+### Changed
+
+- **Dockerfile**: `pandoc` added to the apt install. The dev image is
+  the supported environment for all reverse tests.
+- **`.github/workflows/ci.yml`**: the `lint-test` matrix job runs
+  `apt-get install -y pandoc` before installing the package so the
+  reverse test tier has the binary available.
+- **`README.md`**: new "Reverse (`.docx` → Markdown / RST)" section
+  with install, usage, programmatic API, and known limitations.
+- **`Makefile`**: added the `roundtrip` target and `CORPUS` / `REPORTS`
+  variables.
+
+### Fixed
+
+- `visit_comment` — empty `.. \n` RST comments previously raised
+  `IndexError` via unguarded `node[0]`. Now uses `node.astext()` which
+  tolerates child-less comments; the `DocxTableStyle` table-style
+  override hack still works. Closes GitHub issues #33 and #55.
+
 ## [2.0.0] — _unreleased_
 
 Breaking, consolidating release. Drops Python 2-era packaging, modernises

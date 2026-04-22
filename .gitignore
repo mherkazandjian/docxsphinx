@@ -108,3 +108,10 @@ ENV/
 # Local Claude Code project config (not tracked)
 .claude/
 
+# Private roundtrip corpus — user drops real Word-authored .docx files
+# here and runs `make roundtrip`; neither the inputs nor the generated
+# reports are committed (only the directory's README is). The committed
+# fixture set lives at examples/corpus_samples/ instead.
+examples/corpus/*
+!examples/corpus/README.md
+
