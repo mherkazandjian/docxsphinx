@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docxsphinx"
+version = "2.0.0"
+description = "Sphinx builder that emits Microsoft Word (.docx) from reStructuredText."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Mher Kazandjian", email = "mherkazandjian@gmail.com" },
+    { name = "Hugo Buddelmeijer", email = "hugo@buddelmeijer.nl" },
+]
+requires-python = ">=3.10"
+keywords = ["sphinx", "extension", "builder", "docx", "openxml", "word"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Sphinx :: Extension",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Documentation :: Sphinx",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+    "docutils>=0.17",
+    "Sphinx>=3.5",
+    "python-docx>=1.0.0",
+    "Pygments>=2.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4",
+    "ruff>=0.5",
+    "tox>=4",
+    "build>=1.0",
+    "twine>=4.0",
+    "myst-parser>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mherkazandjian/docxsphinx"
+Issues = "https://github.com/mherkazandjian/docxsphinx/issues"
+Source = "https://github.com/mherkazandjian/docxsphinx"
+
+[project.entry-points."sphinx.builders"]
+docx = "docxsphinx"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "smoke: fast import / registration / extension-setup sanity checks",
+    "unit: pure-unit tests of the visitor against hand-built doctrees (no subprocess, no disk I/O)",
+    "integration: visitor + python-docx working together on parsed RST/MD, inspecting the resulting Document in-memory",
+    "e2e: full sphinx-build subprocess producing a .docx on disk, validated structurally",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+extend-select = ["I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/docxsphinx/writer.py" = ["B008"]

@@ -102,3 +102,6 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Local Claude Code project config (not tracked)
+.claude/
+

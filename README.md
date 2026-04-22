@@ -1,125 +1,180 @@
-# DocxSphinx
+# docxsphinx
 
-[![CircleCI](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master.svg?style=svg)](https://circleci.com/gh/mherkazandjian/docxsphinx/tree/master)
+[![CI](https://github.com/mherkazandjian/docxsphinx/actions/workflows/ci.yml/badge.svg)](https://github.com/mherkazandjian/docxsphinx/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/docxsphinx.svg)](https://pypi.org/project/docxsphinx/)
+[![Python](https://img.shields.io/pypi/pyversions/docxsphinx.svg)](https://pypi.org/project/docxsphinx/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Introduction
-============
-This repository has been forked from
+A Sphinx builder extension that emits **Microsoft Word (`.docx`)** from
+Sphinx documentation sources. Accepts both reStructuredText and Markdown
+(via [myst-parser](https://myst-parser.readthedocs.io/)) input — including
+GFM task-list checkboxes, rendered as `☐` / `☒` glyphs in the Word output.
 
-   https://bitbucket.org/shimizukawa/sphinxcontrib-docxbuilder
+Forked from [shimizukawa/sphinxcontrib-docxbuilder](https://bitbucket.org/shimizukawa/sphinxcontrib-docxbuilder)
+with substantial modification. See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
-and some heavy modification have been done. The major changes are listed in
-the release notes (`todo` add the release notes).
+## Installation
 
-Installation
-============
-The latest bleeding edge version can be installed through
+From PyPI:
 
-   ```
-   pip install docxsphinx
-   ```
+```
+pip install docxsphinx
+```
 
-To install the development version
+From source:
 
-   ```
-   pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
-   ```
+```
+pip install git+https://github.com/mherkazandjian/docxsphinx.git@master
+```
 
-Alternatively the repository can be cloned and installed locally
+## Usage
 
-   ```
-   git clone https://github.com/mherkazandjian/docxsphinx.git
-   cd docxsphinx
-   python -m pip install -r requirements.txt
-   python setup.py install
-   ```
+In your Sphinx project's `conf.py`:
 
-After installation, ```make docx``` in a sphinx project  should work
-(see next section)
+```python
+extensions = ['docxsphinx']
+```
 
-Generating a `docx` document
-============================
-It is assumed that a sphinx project already is in place. At least one change
-must be done to `conf.py` in-order to be able to generate a docx file.
+Then invoke the builder:
 
-The following line must be added to `conf.py`:
+```
+sphinx-build -b docx source build
+```
 
-   ```
-   extensions = ['docxsphinx']
-   ```
+The builder emits a single `.docx` named `{project}-{version}.docx` inside
+the build directory (`project` and `version` come from `conf.py`).
 
-The sample projects are in the directory `examples`
+### Markdown input
 
-  - REPO_ROOT/examples/sample_1 : default example (from the original repo)
-  - REPO_ROOT/examples/sample_2 : example tested with `make docx`
-  - REPO_ROOT/examples/sample_3 : example tested with `make docx` with a custom style
+Add `myst-parser` and register both parsers:
 
+```python
+extensions = ['myst_parser', 'docxsphinx']
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md':  'markdown',
+}
 
-Word styles
-===========
+# Optional — enable the GFM task-list extension for rendered checkboxes:
+myst_enable_extensions = ['tasklist']
+```
 
-a custom word style file can be specified by adding
+Mixed `.rst` + `.md` projects work — see `examples/md_mixed/`.
 
-    ```
-    # 'docx_template' need *.docx or *.dotx template file name. default is None.
-    docx_template = 'template.docx'
-    ```
+### Word style template
 
-to the end of `conf.py` (or anywhere in the file)
+To apply a custom Word style template, set `docx_template` in `conf.py`:
 
-Development
-===========
+```python
+# *.docx or *.dotx template file; resolved relative to the project srcdir
+docx_template = 'template.docx'
+```
 
-Setup the development environment (make sure that pipenv is installed):
+### Debug logging
 
-   ```
-   pipenv install --dev        # creates the .venv dir
-   pipenv shell                # set the environment to use the venv 
-   python setup.py install
-   make tests -B
-   ```
+To capture visitor-level trace output for diagnosing rendering issues:
 
-whenever changes are made the package needs to be re-installed through:
+```python
+docx_debug_log = True              # writes <outdir>/docx.log
+# or
+docx_debug_log = 'path/to/log'     # explicit path (relative to <outdir>)
+```
 
-   ```
-   python setup.py install
-   ```
+Without this setting the writer is silent.
 
-since the tests are run using the commands ``sphinx-build`` that needs to be
-in the environment paths.
+## Examples
 
-The tests can also be run using (but this is not recommended and will be
-removed in the future):
+The `examples/` directory contains ready-to-build Sphinx projects:
 
-   ```
-   python setup.py test
-   ```
- 
-To debug the build process
+| RST | Markdown |
+|---|---|
+| `sample_1` — default example (upstream) | `md_basic` — headings / paragraphs / bold / italic / code |
+| `sample_2` — `make docx` baseline | `md_lists` — bullets / numbered / nested / deflist |
+| `sample_3` — custom `docx_template` | `md_tasklist` — GFM `- [ ]` / `- [x]` → `☐` / `☒` |
+| `sample_4` — variation | `md_tables` — GFM pipe tables |
+| `sample_5` — styled | `md_code` — fenced code blocks (python / bash / json) |
+| `sample_6` — styled | `md_images` — image embedding |
+| | `md_links` — external URLs and intra-doc anchors |
+| | `md_admonitions` — MyST `:::{note}` / `:::{warning}` |
+| | `md_mixed` — RST and MD source files in one project |
 
-   ``` 
-   python -m pdb $(which sphinx-build) -b docx /path/to/src/dir /path/to/build/dir OTHER_SPHINX_OPTIONS_IF_ANY
-   ```
+Build any example:
 
-To produce the ``.docx`` of any of the example files using the current
-development docxsphinx source, e.g. the sphixn project ``sample_2``:
+```
+cd examples/md_tasklist
+sphinx-build -b docx source build
+# or, from the repo root:
+make example DIR=md_tasklist
+```
 
-   ```
-   cd examples/sample_2
-   PYTHONPATH=../../src:$PYTHONPATH make docx -B
-   ```
+## Development
 
-Profiling is useful to see which sections of the code are 
-visited in the module ``src/docxsphinx/writer.py``. For example
-to profile ``sample_2``, the following pattern can be used:
+All development and testing happens in a Docker container. The host only
+needs Docker and `make`:
 
-   ```
-   PYTHONPATH=../../src:$PYTHONPATH python3 -m cProfile -s calls $(which sphinx-build) -M docx source build/docx/ | grep writer.py | awk '{print $6}' | sort > calls
-   ```
+```
+make build    # build the docxsphinx-dev:py3.12 image
+make test     # run the full pytest suite in the container
+make lint     # ruff check src tests
+make shell    # interactive shell in the container
+```
 
-API
-===
-see also 
+Host-native escape hatch (bring your own virtualenv):
 
-    REPO_ROOT/src/README.md  (outdated - but useful)
-    REPO_ROOT/src/docxsphinx/docx/README.md
+```
+pip install -e ".[dev]"
+make test LOCAL=1
+```
+
+Override the Python version:
+
+```
+PYTHON_VERSION=3.11 make build
+PYTHON_VERSION=3.11 make test
+```
+
+### Test pyramid
+
+The suite is split into four tiers, each selectable via `pytest -m <marker>`
+or a Make target:
+
+| Tier | Marker | Target | What it does |
+|---|---|---|---|
+| Smoke | `smoke` | `make test-smoke` | Import, builder registration, `setup()` metadata, entry point |
+| Unit | `unit` | `make test-unit` | Hand-built doctrees → visitor → `Document`, no subprocess |
+| Integration | `integration` | `make test-integration` | Parsed RST / MD → visitor → `Document`, in-memory inspection |
+| End-to-end | `e2e` | `make test-e2e` | Full `sphinx-build` subprocess against each example, zip-validate output |
+
+Inner-loop target: `make test-fast` (everything except e2e).
+
+### Release
+
+Tags matching `v*` trigger `.github/workflows/release.yml`, which builds
+the sdist + wheel, runs `twine check`, and publishes to PyPI via
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC —
+no stored tokens).
+
+Before the first release, configure a Trusted Publisher on PyPI pointing
+at:
+
+- Repository: `mherkazandjian/docxsphinx`
+- Workflow: `release.yml`
+- Environment: `pypi` (create this environment in the repo Settings → Environments)
+
+### Profiling
+
+```
+make profile DIR=sample_2   # cProfile the writer against an example
+```
+
+Reports the top `writer.py` call sites by invocation count.
+
+### Debug tip
+
+```
+python -m pdb $(which sphinx-build) -b docx path/to/src path/to/build
+```
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).

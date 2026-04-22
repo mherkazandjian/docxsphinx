@@ -1,0 +1,66 @@
+name: Release
+
+# Publishes docxsphinx to PyPI when a version tag is pushed.
+#
+# Authentication uses PyPI Trusted Publishing (OIDC) — no stored secrets.
+# Before the first release, configure a Trusted Publisher on PyPI for this
+# repository pointing at the "pypi" environment below and this workflow
+# file name (release.yml).  See:
+#   https://docs.pypi.org/trusted-publishers/
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Check metadata
+        run: twine check dist/*
+
+      - name: Upload distributions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/docxsphinx
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI (OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1

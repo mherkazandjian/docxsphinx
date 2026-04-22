@@ -1,0 +1,15 @@
+services:
+  dev:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    image: docxsphinx-dev:py${PYTHON_VERSION:-3.12}
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      PYTHONPATH: /workspace/src
+    command: bash

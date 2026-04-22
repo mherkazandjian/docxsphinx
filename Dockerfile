@@ -1,21 +1,29 @@
-FROM ubuntu:xenial
+# syntax=docker/dockerfile:1.6
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim AS base
 
-RUN \
-  apt-get update && \
-  apt-get -y install \
-    software-properties-common \
-    python3-pip \
-    git
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-RUN \
-  pip3 install \
-    docutils==0.15 \
-    sphinx==1.6.2 \
-    python-docx==0.8.6 \
-    sphinx-bootstrap-theme==0.6.4 \
-    sphinxcontrib-websupport==1.0.1 \
-    git+https://github.com/mherkazandjian/docxsphinx.git@master
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        git \
+        make \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get clean
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} dev \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash dev
 
-ENTRYPOINT ["make", "docx", "html"]
+WORKDIR /workspace
+
+COPY --chown=dev:dev pyproject.toml README.md ./
+COPY --chown=dev:dev src/ ./src/
+
+RUN pip install -e ".[dev]"
+
+USER dev
+CMD ["bash"]
