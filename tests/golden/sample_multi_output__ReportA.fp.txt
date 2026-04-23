@@ -1,0 +1,43 @@
+# docxsphinx fingerprint for ReportA.docx
+# format-version: 1
+
+paragraphs        7
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         3
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Report A — first output
+  Heading2      Summary
+  Heading2      Details
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      2
+  ListBullet                    2
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  details
+  report-a-first-output
+  summary
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           21
+  w:t                           21
+  w:p                           7
+  w:pPr                         5
+  w:pStyle                      5
+  w:bookmarkStart               3
+  w:document                    1
+  w:body                        1

@@ -54,6 +54,27 @@ worth matching.
 
 ### Added
 
+- **Multiple `.docx` outputs per project via `docx_documents` (closes #40).**
+  New `docx_documents` config value (added with default `[]`) mirrors
+  Sphinx's built-in `latex_documents`. Each entry is a tuple
+  `(startdoc, targetname, template, toctree_only)`:
+  - `startdoc`: source docname (no suffix) rooting this output's
+    toctree traversal.
+  - `targetname`: output filename (``.docx`` suffix added if missing).
+  - `template`: optional per-output template, overrides the project-
+    level `docx_template`. `None` falls back to the default.
+  - `toctree_only`: when `True`, the master's prose sections are
+    stripped and only its toctree'd chapters appear in the output —
+    useful when the master is a cover / index page.
+  The builder iterates over every entry, reassembling the doctree,
+  instantiating a fresh `DocxWriter` (including any per-entry
+  template), and writing to `<outdir>/<targetname>` each pass. If
+  `docx_documents` is empty (the common case), the legacy single-
+  output behaviour is synthesised transparently from
+  `master_doc` / `project` / `version` — no existing project needs
+  changes. New `examples/sample_multi_output/` demonstrates two
+  independent reports (`ReportA.docx` + `ReportB.docx`) emitted from
+  one Sphinx invocation, committed with one golden fingerprint each.
 - **`templates_path` honoured for `docx_template` lookup (closes #22).**
   When `docx_template` is a relative path, the resolver now searches
   every entry of Sphinx's standard `templates_path` config (resolved

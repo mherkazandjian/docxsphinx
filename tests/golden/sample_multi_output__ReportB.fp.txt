@@ -1,0 +1,41 @@
+# docxsphinx fingerprint for ReportB.docx
+# format-version: 1
+
+paragraphs        6
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         2
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Report B — second output
+  Heading2      Findings
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      1
+  ListNumber                    3
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  findings
+  report-b-second-output
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           16
+  w:t                           16
+  w:p                           6
+  w:pPr                         5
+  w:pStyle                      5
+  w:bookmarkStart               2
+  w:document                    1
+  w:body                        1

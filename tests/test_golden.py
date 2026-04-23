@@ -46,8 +46,8 @@ GOLDEN_DIR = Path(__file__).resolve().parent / 'golden'
 UPDATE_GOLDEN = os.environ.get('UPDATE_GOLDEN') == '1'
 
 
-def _build(sample_name: str) -> Path:
-    """Force-build the example and return the path to the emitted .docx."""
+def _build(sample_name: str, expected_filenames: tuple[str, ...]) -> list[Path]:
+    """Force-build the example and return paths to every expected output."""
     example_dir = EXAMPLES_ROOT / sample_name
     build_dir = example_dir / 'build'
     shutil.rmtree(build_dir, ignore_errors=True)
@@ -58,17 +58,37 @@ def _build(sample_name: str) -> Path:
     assert result.returncode == 0, (
         f'sphinx-build failed for {sample_name}:\n{result.stderr}'
     )
-    docxes = list(build_dir.glob('*.docx'))
-    assert len(docxes) == 1, f'expected one .docx in {build_dir}, got {docxes}'
-    return docxes[0]
+    paths = [build_dir / name for name in expected_filenames]
+    for p in paths:
+        assert p.is_file(), f'expected output missing: {p}'
+    return paths
 
 
-@pytest.mark.parametrize(('sample_name', '_expected_filename'), EXAMPLES)
-def test_golden_fingerprint(sample_name: str, _expected_filename: str) -> None:
-    docx = _build(sample_name)
+def _golden_name(sample_name: str, docx_name: str, single: bool) -> str:
+    """Golden file stem: ``<sample>`` for single-output samples;
+    ``<sample>__<docx-stem>`` when a sample produces multiple docs so
+    each gets its own committed fingerprint."""
+    if single:
+        return sample_name
+    return f'{sample_name}__{Path(docx_name).stem}'
+
+
+@pytest.mark.parametrize(('sample_name', 'expected_filenames'), EXAMPLES)
+def test_golden_fingerprint(
+    sample_name: str, expected_filenames: tuple[str, ...],
+) -> None:
+    docxes = _build(sample_name, expected_filenames)
+    single = len(docxes) == 1
+    for docx, expected in zip(docxes, expected_filenames, strict=True):
+        _compare_fingerprint(sample_name, docx, expected, single)
+
+
+def _compare_fingerprint(
+    sample_name: str, docx: Path, docx_name: str, single: bool,
+) -> None:
     actual = fingerprint(docx)
-
-    golden_path = GOLDEN_DIR / f'{sample_name}.fp.txt'
+    stem = _golden_name(sample_name, docx_name, single)
+    golden_path = GOLDEN_DIR / f'{stem}.fp.txt'
     if UPDATE_GOLDEN or not golden_path.is_file():
         GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
         golden_path.write_text(actual)
@@ -91,7 +111,7 @@ def test_golden_fingerprint(sample_name: str, _expected_filename: str) -> None:
         n=3,
     ))
     pytest.fail(
-        f'fingerprint mismatch for {sample_name}.\n'
+        f'fingerprint mismatch for {sample_name} ({docx.name}).\n'
         f'If this change is intentional, regenerate goldens with:\n'
         f'    make golden-update\n'
         f'\ndiff:\n{diff}'

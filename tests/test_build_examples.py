@@ -18,36 +18,40 @@ import pytest
 
 pytestmark = pytest.mark.e2e
 
-EXAMPLES = [
+# Each entry: (sample_dir_name, expected_output_filenames). A tuple of
+# one filename is the common case; multi-output examples (via
+# ``docx_documents`` in conf.py) ship more than one.
+EXAMPLES: list[tuple[str, tuple[str, ...]]] = [
     # RST samples (pre-existing)
-    ('sample_1', 'example-0.1.docx'),
-    ('sample_2', 'my_foo_project-0.0.0.docx'),
-    ('sample_3', 'my_foo_project-0.0.0.docx'),
-    ('sample_4', 'my_foo_project-0.0.0.docx'),
-    ('sample_5', 'example-0.1.docx'),
-    ('sample_6', 'example-0.1.docx'),
+    ('sample_1', ('example-0.1.docx',)),
+    ('sample_2', ('my_foo_project-0.0.0.docx',)),
+    ('sample_3', ('my_foo_project-0.0.0.docx',)),
+    ('sample_4', ('my_foo_project-0.0.0.docx',)),
+    ('sample_5', ('example-0.1.docx',)),
+    ('sample_6', ('example-0.1.docx',)),
     # Markdown / MyST samples (Phase 3)
-    ('md_basic', 'md_basic_project-0.1.docx'),
-    ('md_lists', 'md_lists_project-0.1.docx'),
-    ('md_tasklist', 'md_tasklist_project-0.1.docx'),
-    ('md_tables', 'md_tables_project-0.1.docx'),
-    ('md_code', 'md_code_project-0.1.docx'),
-    ('md_images', 'md_images_project-0.1.docx'),
-    ('md_links', 'md_links_project-0.1.docx'),
-    ('md_admonitions', 'md_admonitions_project-0.1.docx'),
-    ('md_mixed', 'md_mixed_project-0.1.docx'),
-    ('md_showcase', 'md_showcase_project-0.1.docx'),
-    ('md_math', 'md_math_project-0.1.docx'),
-    ('sample_autodoc', 'sample_autodoc_project-0.1.docx'),
-    ('sample_nested_toctree', 'sample_nested_toctree_project-0.1.docx'),
+    ('md_basic', ('md_basic_project-0.1.docx',)),
+    ('md_lists', ('md_lists_project-0.1.docx',)),
+    ('md_tasklist', ('md_tasklist_project-0.1.docx',)),
+    ('md_tables', ('md_tables_project-0.1.docx',)),
+    ('md_code', ('md_code_project-0.1.docx',)),
+    ('md_images', ('md_images_project-0.1.docx',)),
+    ('md_links', ('md_links_project-0.1.docx',)),
+    ('md_admonitions', ('md_admonitions_project-0.1.docx',)),
+    ('md_mixed', ('md_mixed_project-0.1.docx',)),
+    ('md_showcase', ('md_showcase_project-0.1.docx',)),
+    ('md_math', ('md_math_project-0.1.docx',)),
+    ('sample_autodoc', ('sample_autodoc_project-0.1.docx',)),
+    ('sample_nested_toctree', ('sample_nested_toctree_project-0.1.docx',)),
+    ('sample_multi_output', ('ReportA.docx', 'ReportB.docx')),
 ]
 
 
-@pytest.mark.parametrize(('sample_name', 'expected_filename'), EXAMPLES)
+@pytest.mark.parametrize(('sample_name', 'expected_filenames'), EXAMPLES)
 def test_examples(
     examples_root: Path,
     sample_name: str,
-    expected_filename: str,
+    expected_filenames: tuple[str, ...],
 ) -> None:
     example_dir = examples_root / sample_name
     build_dir = example_dir / 'build'
@@ -67,16 +71,17 @@ def test_examples(
         f'stderr:\n{result.stderr}'
     )
 
-    output_path = build_dir / expected_filename
-    assert output_path.is_file(), f'expected output missing: {output_path}'
+    for expected in expected_filenames:
+        output_path = build_dir / expected
+        assert output_path.is_file(), f'expected output missing: {output_path}'
 
-    with zipfile.ZipFile(output_path) as zf:
-        names = zf.namelist()
-        assert 'word/document.xml' in names, (
-            f'{output_path} is not a valid docx (missing word/document.xml); '
-            f'entries: {names[:10]}'
-        )
-        document_xml = zf.read('word/document.xml')
-        assert document_xml.startswith(b'<?xml'), (
-            f'{output_path}:word/document.xml does not start with XML declaration'
-        )
+        with zipfile.ZipFile(output_path) as zf:
+            names = zf.namelist()
+            assert 'word/document.xml' in names, (
+                f'{output_path} is not a valid docx (missing word/document.xml); '
+                f'entries: {names[:10]}'
+            )
+            document_xml = zf.read('word/document.xml')
+            assert document_xml.startswith(b'<?xml'), (
+                f'{output_path}:word/document.xml does not start with XML declaration'
+            )

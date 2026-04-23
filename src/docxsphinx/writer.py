@@ -287,9 +287,17 @@ class DocxWriter(writers.Writer):
 
     output = None
 
-    def __init__(self, builder):
+    def __init__(self, builder, template_override: str | None = None):
+        """Initialise the writer.
+
+        ``template_override`` — optional path (relative to ``srcdir`` or
+        absolute) taking precedence over ``docx_template``. Used by
+        per-output entries in ``docx_documents`` that want their own
+        template without disturbing the project-level default.
+        """
         writers.Writer.__init__(self)
         self.builder = builder
+        self._template_override = template_override
         self.template_path: Path | None = self._resolve_template_path()
 
         if self.template_path is None:
@@ -348,7 +356,7 @@ class DocxWriter(writers.Writer):
         error pointing at the expected location rather than silently
         using a default template.
         """
-        dotx = self.builder.config['docx_template']
+        dotx = self._template_override or self.builder.config['docx_template']
         if not dotx:
             return None
         template = Path(dotx)

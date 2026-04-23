@@ -39,7 +39,8 @@ def test_entry_point_registered() -> None:
 
 
 def test_setup_returns_parallel_metadata_and_registers_config() -> None:
-    """``setup(app)`` must register the builder, two config values, and return parallel-safety metadata."""
+    """``setup(app)`` must register the builder, the project config
+    values, and return parallel-safety metadata."""
     from docxsphinx import setup
 
     app = MagicMock()
@@ -52,6 +53,8 @@ def test_setup_returns_parallel_metadata_and_registers_config() -> None:
     (builder_arg,), _ = app.add_builder.call_args
     assert builder_arg.name == 'docx'
 
-    # Both config values registered.
+    # All config values are registered under their expected names.
     registered = {call.args[0] for call in app.add_config_value.call_args_list}
-    assert registered == {'docx_template', 'docx_debug_log'}, registered
+    assert registered == {
+        'docx_template', 'docx_debug_log', 'docx_documents',
+    }, registered

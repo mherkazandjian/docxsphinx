@@ -1286,6 +1286,109 @@ def test_template_path_absolute_path_untouched(tmp_path: Path) -> None:
     assert writer.template_path == template
 
 
+def test_docx_documents_entry_coercion_from_tuple() -> None:
+    """``docx_documents`` accepts raw tuples for brevity; the builder
+    coerces each entry into a ``DocxDocumentEntry`` filling in optional
+    fields with their defaults (``template=None``, ``toctree_only=False``)."""
+    from docxsphinx.builder import DocxBuilder, DocxDocumentEntry
+
+    short = DocxBuilder._coerce_entry(('index', 'MyProject.docx'))
+    assert short == DocxDocumentEntry('index', 'MyProject.docx', None, False)
+
+    full = DocxBuilder._coerce_entry(
+        ('report_a', 'A.docx', 'styled.docx', True),
+    )
+    assert full == DocxDocumentEntry('report_a', 'A.docx', 'styled.docx', True)
+
+
+def test_docx_documents_entry_coercion_rejects_too_short() -> None:
+    """Every entry needs at least (startdoc, targetname)."""
+    from docxsphinx.builder import DocxBuilder
+
+    with pytest.raises(ValueError, match='at least'):
+        DocxBuilder._coerce_entry(('only-startdoc',))
+
+
+def test_document_entries_back_compat_synthesises_single_output(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """When ``docx_documents`` is empty (the common back-compat case),
+    ``_document_entries`` yields exactly one entry derived from
+    ``master_doc`` + ``project`` + ``version`` — reproducing pre-2.1
+    single-output behaviour."""
+    from docxsphinx.builder import DocxBuilder, DocxDocumentEntry
+
+    # Minimal builder-like object exposing the config fields
+    # ``_document_entries`` reads.
+    builder = SimpleNamespace(
+        config=SimpleNamespace(
+            docx_documents=[],
+            project='my_proj',
+            version='0.2',
+            master_doc='index',
+        ),
+    )
+    entries = DocxBuilder._document_entries(builder)
+    assert entries == [DocxDocumentEntry('index', 'my_proj-0.2', None, False)]
+
+
+def test_document_entries_passes_through_configured_list(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """When ``docx_documents`` is set, its entries flow through
+    unchanged (coerced to ``DocxDocumentEntry`` for type uniformity)."""
+    from docxsphinx.builder import DocxBuilder, DocxDocumentEntry
+
+    builder = SimpleNamespace(
+        config=SimpleNamespace(
+            docx_documents=[
+                ('report_a', 'A.docx', None, False),
+                ('report_b', 'B.docx', 'custom.docx', True),
+            ],
+            project='my_proj',
+            version='0.2',
+            master_doc='index',
+        ),
+    )
+    entries = DocxBuilder._document_entries(builder)
+    assert entries == [
+        DocxDocumentEntry('report_a', 'A.docx', None, False),
+        DocxDocumentEntry('report_b', 'B.docx', 'custom.docx', True),
+    ]
+
+
+def test_toctree_only_shell_drops_master_prose() -> None:
+    """``toctree_only=True`` strips the master document's own prose and
+    keeps only its title + toctree directives — so the first real
+    chapter becomes the top-level content of the output."""
+    from sphinx import addnodes
+
+    from docxsphinx.builder import _toctree_only_shell
+
+    doctree = _blank_document()
+    section = nodes.section(ids=['master'])
+    section += nodes.title(text='Master title')
+    section += nodes.paragraph(text='Intro paragraph that should be dropped.')
+    toctree = addnodes.toctree()
+    compound = nodes.compound(classes=['toctree-wrapper'])
+    compound += toctree
+    section += compound
+    section += nodes.paragraph(text='Another paragraph to drop.')
+    doctree += section
+
+    shell = _toctree_only_shell(doctree)
+    # Title survives, toctree wrapper survives, prose paragraphs don't.
+    surviving_texts = [
+        n.astext() for n in shell.findall()
+        if isinstance(n, nodes.paragraph)
+    ]
+    assert surviving_texts == [], surviving_texts
+    titles = [n.astext() for n in shell.findall() if isinstance(n, nodes.title)]
+    assert titles == ['Master title'], titles
+    toctrees = [n for n in shell.findall() if isinstance(n, addnodes.toctree)]
+    assert len(toctrees) == 1
+
+
 def test_nested_toctree_produces_descending_heading_levels(
     fake_builder: SimpleNamespace,
 ) -> None:

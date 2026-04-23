@@ -110,6 +110,7 @@ Mixed `.rst` + `.md` in the same project works — see
 |---|---|---|
 | `docx_template` | `None` | Path to a `.docx` or `.dotx` template whose styles carry over. `.dotx` is loaded by transparently rewriting the main-document content-type override in memory (python-docx itself won't open `.dotx` — see #41). Relative paths are searched under each entry of `templates_path` (in order), then under `srcdir` itself. Absolute paths are used as-is. |
 | `docx_debug_log` | `None` | `True` or a relative path → visitor-level DEBUG trace written to `<outdir>/docx.log` (or the given path). Default: writer is silent. |
+| `docx_documents` | `[]` | List of `(startdoc, targetname, template, toctree_only)` tuples — one per `.docx` to emit. Mirrors Sphinx's built-in `latex_documents`. Leaving it empty keeps the legacy single-output behaviour (one `{project}-{version}.docx` from `master_doc`). See [`examples/sample_multi_output/`](examples/sample_multi_output/) for a two-output project. |
 
 ### Example with a custom template
 
@@ -196,7 +197,7 @@ Reports land in `examples/corpus/reports/` (gitignored).
 
 ## Examples
 
-Seventeen ready-to-build Sphinx projects live in [`examples/`](examples/):
+Eighteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 
 | RST | Markdown |
 |---|---|
@@ -208,6 +209,7 @@ Seventeen ready-to-build Sphinx projects live in [`examples/`](examples/):
 | `sample_6` — styled template | `md_images` — native + sized + aligned images |
 | `sample_autodoc` — `sphinx.ext.autodoc` against an in-repo Python module | `md_links` — external URLs and intra-doc anchors |
 | `sample_nested_toctree` — three-file toctree chain → H1/H2/H3 | |
+| `sample_multi_output` — two `.docx` files via `docx_documents` | |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` / all types |
 | | `md_mixed` — RST and MD source files in one project |
 | | `md_math` — LaTeX equations → OMML (inline, display, AMS environments) |
