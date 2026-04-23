@@ -196,7 +196,7 @@ Reports land in `examples/corpus/reports/` (gitignored).
 
 ## Examples
 
-Sixteen ready-to-build Sphinx projects live in [`examples/`](examples/):
+Seventeen ready-to-build Sphinx projects live in [`examples/`](examples/):
 
 | RST | Markdown |
 |---|---|
@@ -207,6 +207,7 @@ Sixteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 | `sample_5` — styled template | `md_code` — fenced code blocks (python / bash / json) |
 | `sample_6` — styled template | `md_images` — native + sized + aligned images |
 | `sample_autodoc` — `sphinx.ext.autodoc` against an in-repo Python module | `md_links` — external URLs and intra-doc anchors |
+| `sample_nested_toctree` — three-file toctree chain → H1/H2/H3 | |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` / all types |
 | | `md_mixed` — RST and MD source files in one project |
 | | `md_math` — LaTeX equations → OMML (inline, display, AMS environments) |

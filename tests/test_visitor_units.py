@@ -1286,6 +1286,59 @@ def test_template_path_absolute_path_untouched(tmp_path: Path) -> None:
     assert writer.template_path == template
 
 
+def test_nested_toctree_produces_descending_heading_levels(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """Sections reached via a toctree-inlined ``<start_of_file>`` must pick
+    up the nesting depth of the enclosing section, not reset to Heading 1.
+
+    Shape of the doctree ``inline_all_toctrees`` produces:
+
+    .. code-block::
+
+        <document>
+          <section chapter>                  # -> Heading 1
+            <title>Chapter</title>
+            <compound classes="toctree-wrapper">
+              <start_of_file docname="...">
+                <section nested>             # -> Heading 2 (was Heading 1 before #53)
+                  <title>Section</title>
+
+    Regression guard for #53.
+    """
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    outer = nodes.section(ids=['chapter'])
+    outer += nodes.title(text='Chapter')
+    compound = nodes.compound(classes=['toctree-wrapper'])
+    sof = addnodes.start_of_file(docname='nested')
+    inner = nodes.section(ids=['nested-section'])
+    inner += nodes.title(text='Nested section')
+    deeper_compound = nodes.compound(classes=['toctree-wrapper'])
+    deeper_sof = addnodes.start_of_file(docname='deepest')
+    deepest = nodes.section(ids=['deepest-section'])
+    deepest += nodes.title(text='Deepest section')
+    deeper_sof += deepest
+    deeper_compound += deeper_sof
+    inner += deeper_compound
+    sof += inner
+    compound += sof
+    outer += compound
+    doctree += outer
+
+    doc = _walk_doctree(doctree, fake_builder)
+    headings = [
+        (p.style.name if p.style else '-', p.text)
+        for p in doc.paragraphs if p.style and p.style.name.startswith('Heading')
+    ]
+    assert headings == [
+        ('Heading 1', 'Chapter'),
+        ('Heading 2', 'Nested section'),
+        ('Heading 3', 'Deepest section'),
+    ], headings
+
+
 def _synthesise_dotx(source_docx: Path, dest_dotx: Path) -> None:
     """Rewrite a plain .docx as a .dotx by swapping the main-document
     content type in ``[Content_Types].xml`` from ``document.main+xml``

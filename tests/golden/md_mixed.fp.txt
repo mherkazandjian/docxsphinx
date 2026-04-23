@@ -11,15 +11,17 @@ footnotes         0
 # heading texts (in document order)
   Heading1      md_mixed — Markdown and reStructuredText side-by-side
   Heading2      Why mix formats?
-  Heading1      Appendix written in reStructuredText
-  Heading2      A reStructuredText list
-  Heading2      A reStructuredText note
-  Heading2      Inline roles and formatting
-  Heading1      A Markdown bullet list
+  Heading3      Appendix written in reStructuredText
+  Heading4      A reStructuredText list
+  Heading4      A reStructuredText note
+  Heading4      Inline roles and formatting
+  Heading2      A Markdown bullet list
 
 # paragraph styles (sorted)
-  Heading1                      3
-  Heading2                      4
+  Heading1                      1
+  Heading2                      2
+  Heading3                      1
+  Heading4                      3
   ListBullet                    6
 
 # run styles (sorted)

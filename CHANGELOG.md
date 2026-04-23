@@ -16,6 +16,19 @@ worth matching.
 
 ### Fixed
 
+- **Nested toctree heading levels (closes #53).** Sections reached via
+  a toctree-inlined `<start_of_file>` now inherit the depth of the
+  enclosing section — a chapter with `Heading 1`, its toctree'd
+  sub-document with `Heading 2`, a sub-sub-document with `Heading 3`.
+  Previously `visit_start_of_file` reset `sectionlevel` to zero on
+  every file boundary (a "quick hack" from the upstream
+  sphinxcontrib-docxbuilder codebase), collapsing every included
+  heading to `Heading 1` and flattening multi-file projects into a
+  single apparent depth. Behaviour now matches Sphinx's ``singlehtml``
+  builder for nested toctrees. New `examples/sample_nested_toctree/`
+  permanently regression-tests the three-level case; `sample_1` and
+  `md_mixed` golden fingerprints shifted accordingly (more deep-level
+  headings, fewer spurious level-1 titles).
 - **`.dotx` templates load without content-type errors (closes #41).**
   python-docx 1.2's `Document()` constructor refuses to open `.dotx`
   files because their main-document part is stamped

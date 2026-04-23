@@ -1,0 +1,43 @@
+# docxsphinx fingerprint for sample_nested_toctree_project-0.1.docx
+# format-version: 1
+
+paragraphs        6
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         3
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Chapter title
+  Heading2      Section title
+  Heading3      Subsection title
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      1
+  Heading3                      1
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  chapter-title
+  section-title
+  subsection-title
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:p                           6
+  w:r                           6
+  w:t                           6
+  w:pPr                         3
+  w:pStyle                      3
+  w:bookmarkStart               3
+  w:document                    1
+  w:body                        1

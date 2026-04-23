@@ -496,15 +496,13 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_start_of_file(self, node):
         dprint()
-        # TODO: HB should visit_start_of_file reset the sectionlevel?
-        # If so, should it start a new state? If so, with which location?
-
-        # FIXME: visit_start_of_file not close previous section.
-        # sectionlevel keep previous and new file's heading level start with
-        # previous + 1.
-        # This quick hack reset sectionlevel per file.
-        # (BTW Sphinx has heading levels per file? or entire document?)
-        self.sectionlevel = 0
+        # Do NOT reset sectionlevel — ``inline_all_toctrees`` already nests
+        # each included document's sections inside the parent's
+        # ``<compound><start_of_file>``, so the existing
+        # visit_section/depart_section increments track the true doctree
+        # depth across file boundaries. Resetting here made every
+        # toctree'd heading collapse to "Heading 1" regardless of how
+        # deeply it was included (see #53).
 
     def depart_start_of_file(self, node):
         dprint()
