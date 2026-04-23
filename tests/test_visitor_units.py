@@ -1228,3 +1228,79 @@ def test_desc_addname_module_prefix_hidden(fake_builder: SimpleNamespace) -> Non
     all_text = ' '.join(p.text for p in doc.paragraphs)
     assert 'Calculator' in all_text, all_text
     assert 'mymodule.' not in all_text, all_text
+
+
+def _make_template_builder(
+    srcdir: Path, docx_template: str, templates_path: list[str] | None = None,
+) -> SimpleNamespace:
+    """Minimal ``Builder`` stand-in wired up for ``DocxWriter`` to resolve
+    a ``docx_template`` against ``srcdir`` + optional ``templates_path``."""
+    cfg: dict = {'docx_template': docx_template, 'docx_debug_log': None}
+    if templates_path is not None:
+        cfg['templates_path'] = templates_path
+    return SimpleNamespace(env=SimpleNamespace(srcdir=str(srcdir)), config=cfg)
+
+
+def test_template_path_resolves_against_srcdir(tmp_path: Path) -> None:
+    """Back-compat: ``docx_template = 'template.docx'`` in ``<srcdir>/`` still
+    resolves when ``templates_path`` is unset."""
+    from docxsphinx.writer import DocxWriter
+
+    template = tmp_path / 'template.docx'
+    # Minimal valid docx — copy the python-docx default.
+    Document().save(str(template))
+
+    builder = _make_template_builder(tmp_path, 'template.docx')
+    writer = DocxWriter(builder)
+    assert writer.template_path == template
+
+
+def test_template_path_honours_templates_path(tmp_path: Path) -> None:
+    """``templates_path`` entries are searched before ``srcdir``, fixing #22."""
+    from docxsphinx.writer import DocxWriter
+
+    templates_dir = tmp_path / '_templates'
+    templates_dir.mkdir()
+    template = templates_dir / 'template.docx'
+    Document().save(str(template))
+
+    builder = _make_template_builder(
+        tmp_path, 'template.docx', templates_path=['_templates'],
+    )
+    writer = DocxWriter(builder)
+    assert writer.template_path == template
+
+
+def test_template_path_absolute_path_untouched(tmp_path: Path) -> None:
+    """Absolute ``docx_template`` is used as-is regardless of
+    ``templates_path``."""
+    from docxsphinx.writer import DocxWriter
+
+    template = tmp_path / 'abs_template.docx'
+    Document().save(str(template))
+
+    builder = _make_template_builder(
+        tmp_path, str(template), templates_path=['_templates'],
+    )
+    writer = DocxWriter(builder)
+    assert writer.template_path == template
+
+
+def test_template_path_templates_path_takes_precedence(tmp_path: Path) -> None:
+    """When the same filename exists in both a ``templates_path`` entry
+    and ``srcdir``, the ``templates_path`` copy wins (users who set
+    ``templates_path`` expect Sphinx's standard template lookup)."""
+    from docxsphinx.writer import DocxWriter
+
+    templates_dir = tmp_path / '_templates'
+    templates_dir.mkdir()
+    in_templates = templates_dir / 'template.docx'
+    in_srcdir = tmp_path / 'template.docx'
+    Document().save(str(in_templates))
+    Document().save(str(in_srcdir))
+
+    builder = _make_template_builder(
+        tmp_path, 'template.docx', templates_path=['_templates'],
+    )
+    writer = DocxWriter(builder)
+    assert writer.template_path == in_templates

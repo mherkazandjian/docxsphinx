@@ -16,6 +16,17 @@ worth matching.
 
 ### Added
 
+- **`templates_path` honoured for `docx_template` lookup (closes #22).**
+  When `docx_template` is a relative path, the resolver now searches
+  every entry of Sphinx's standard `templates_path` config (resolved
+  against `srcdir`) *before* falling through to `srcdir` itself. A
+  `conf.py` that sets `templates_path = ['_templates']` together with
+  `docx_template = 'template.docx'` now finds `<srcdir>/_templates/template.docx`
+  as Sphinx users would expect, instead of silently ignoring
+  `templates_path` and failing at the `srcdir` root. Absolute paths
+  are unchanged; back-compat preserved for projects that keep the
+  template at the `srcdir` root. If no candidate is found, a warning
+  lists the directories searched before falling back to `srcdir/<name>`.
 - **Autodoc rendering (closes #16).** Sphinx's `sphinx.ext.autodoc`
   description nodes now emit into Word. Previously `visit_desc_*` and
   `visit_field_*` were `SkipNode` stubs, so `.. automodule::` /

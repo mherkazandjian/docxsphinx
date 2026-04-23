@@ -296,14 +296,47 @@ class DocxWriter(writers.Writer):
             self.docx_container = Document(str(self.template_path))
 
     def _resolve_template_path(self) -> Path | None:
+        """Resolve ``docx_template`` against Sphinx's standard template lookup.
+
+        Search order for a relative ``docx_template``:
+
+        1. Each entry of ``templates_path`` (resolved against ``srcdir``),
+           in the order they appear in ``conf.py``.
+        2. ``srcdir`` itself (for back-compat with pre-2.1 behaviour and
+           projects that don't set ``templates_path``).
+
+        The first file that exists wins. If none exist, we fall through
+        to ``srcdir/<dotx>`` so python-docx raises a clear "not found"
+        error pointing at the expected location rather than silently
+        using a default template.
+        """
         dotx = self.builder.config['docx_template']
         if not dotx:
             return None
         template = Path(dotx)
-        if not template.is_absolute():
-            template = Path(self.builder.env.srcdir) / template
-        logger.info("using docx template: %s", template)
-        return template
+        if template.is_absolute():
+            logger.info("using docx template: %s", template)
+            return template
+
+        srcdir = Path(self.builder.env.srcdir)
+        templates_path = getattr(self.builder.config, 'templates_path', None) or []
+        if isinstance(self.builder.config, dict):
+            templates_path = self.builder.config.get('templates_path') or []
+
+        search_dirs = [srcdir / entry for entry in templates_path]
+        search_dirs.append(srcdir)
+        for base in search_dirs:
+            candidate = base / template
+            if candidate.is_file():
+                logger.info("using docx template: %s", candidate)
+                return candidate
+
+        fallback = srcdir / template
+        logger.warning(
+            "docx_template %r not found; searched %s",
+            dotx, ', '.join(str(d) for d in search_dirs),
+        )
+        return fallback
 
     def save(self, filename):
         self.docx_container.save(filename)

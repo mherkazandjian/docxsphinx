@@ -107,7 +107,7 @@ Mixed `.rst` + `.md` in the same project works — see
 
 | `conf.py` value | Default | Purpose |
 |---|---|---|
-| `docx_template` | `None` | Path to a `.docx` (or `.dotx`) template whose styles carry over. Resolved against the project's `srcdir`. |
+| `docx_template` | `None` | Path to a `.docx` (or `.dotx`) template whose styles carry over. Relative paths are searched under each entry of `templates_path` (in order), then under `srcdir` itself. Absolute paths are used as-is. |
 | `docx_debug_log` | `None` | `True` or a relative path → visitor-level DEBUG trace written to `<outdir>/docx.log` (or the given path). Default: writer is silent. |
 
 ### Example with a custom template
