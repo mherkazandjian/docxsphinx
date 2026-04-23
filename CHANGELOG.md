@@ -16,6 +16,17 @@ worth matching.
 
 ### Fixed
 
+- **`.dotx` templates load without content-type errors (closes #41).**
+  python-docx 1.2's `Document()` constructor refuses to open `.dotx`
+  files because their main-document part is stamped
+  `...wordprocessingml.template.main+xml` rather than
+  `...wordprocessingml.document.main+xml` — previously users had to
+  "Save As → Word Document" in MS Word first. `DocxWriter` now detects
+  a `.dotx` extension and transparently rewrites the content-type
+  override in an in-memory zip copy (every other byte of the package
+  is preserved) before handing it to `Document()`. Users can point
+  `docx_template` at either `template.docx` or `template.dotx`
+  interchangeably.
 - **`:numref:` references render correctly (closes #36).** Sphinx
   resolves ``:numref:`<label>``` to a `sphinx.addnodes.number_reference`
   wrapping an `inline` with formatted text like "Fig. 1" / "Table 3".

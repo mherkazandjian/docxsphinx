@@ -5,9 +5,11 @@ BSD licence).
 """
 from __future__ import annotations
 
+import io
 import logging
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 from docutils import nodes, writers
@@ -293,7 +295,43 @@ class DocxWriter(writers.Writer):
         if self.template_path is None:
             self.docx_container = Document()
         else:
-            self.docx_container = Document(str(self.template_path))
+            self.docx_container = self._open_template(self.template_path)
+
+    @staticmethod
+    def _open_template(path: Path):
+        """Open a ``.docx`` or ``.dotx`` template.
+
+        ``python-docx`` 1.2's ``Document()`` rejects ``.dotx`` files because
+        their main-document part is stamped
+        ``application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml``
+        rather than ``...wordprocessingml.document.main+xml`` — see #41.
+        The two formats share the same OOXML structure otherwise, so we
+        transparently rewrite the content-type in an in-memory copy and
+        hand that to ``Document()``.
+        """
+        if path.suffix.lower() != '.dotx':
+            return Document(str(path))
+
+        template_ct = (
+            b'application/vnd.openxmlformats-officedocument'
+            b'.wordprocessingml.template.main+xml'
+        )
+        document_ct = (
+            b'application/vnd.openxmlformats-officedocument'
+            b'.wordprocessingml.document.main+xml'
+        )
+        buf = io.BytesIO()
+        with zipfile.ZipFile(path) as src, zipfile.ZipFile(
+            buf, 'w', zipfile.ZIP_DEFLATED,
+        ) as dst:
+            for info in src.infolist():
+                data = src.read(info.filename)
+                if info.filename == '[Content_Types].xml':
+                    data = data.replace(template_ct, document_ct)
+                dst.writestr(info, data)
+        buf.seek(0)
+        logger.info('loaded .dotx template as in-memory .docx: %s', path)
+        return Document(buf)
 
     def _resolve_template_path(self) -> Path | None:
         """Resolve ``docx_template`` against Sphinx's standard template lookup.

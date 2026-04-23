@@ -1286,6 +1286,75 @@ def test_template_path_absolute_path_untouched(tmp_path: Path) -> None:
     assert writer.template_path == template
 
 
+def _synthesise_dotx(source_docx: Path, dest_dotx: Path) -> None:
+    """Rewrite a plain .docx as a .dotx by swapping the main-document
+    content type in ``[Content_Types].xml`` from ``document.main+xml``
+    to ``template.main+xml`` — the exact shape python-docx 1.2 rejects."""
+    import zipfile
+
+    template_ct = (
+        b'application/vnd.openxmlformats-officedocument'
+        b'.wordprocessingml.template.main+xml'
+    )
+    document_ct = (
+        b'application/vnd.openxmlformats-officedocument'
+        b'.wordprocessingml.document.main+xml'
+    )
+    with zipfile.ZipFile(source_docx) as src, zipfile.ZipFile(
+        dest_dotx, 'w', zipfile.ZIP_DEFLATED,
+    ) as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == '[Content_Types].xml':
+                data = data.replace(document_ct, template_ct)
+            dst.writestr(info, data)
+
+
+def test_dotx_template_loads_via_content_type_rewrite(tmp_path: Path) -> None:
+    """``.dotx`` files have ``wordprocessingml.template.main+xml`` content
+    type which python-docx's ``Document()`` rejects outright. The writer
+    transparently rewrites the content type in-memory and loads the
+    template — fixes #41."""
+    from docxsphinx.writer import DocxWriter
+
+    # Make a plain .docx to start from, then rewrite as .dotx.
+    seed = tmp_path / 'seed.docx'
+    Document().save(str(seed))
+    dotx = tmp_path / 'template.dotx'
+    _synthesise_dotx(seed, dotx)
+
+    # Sanity check: vanilla python-docx rejects it.
+    with pytest.raises(ValueError, match='not a Word file'):
+        Document(str(dotx))
+
+    # The writer should succeed.
+    builder = _make_template_builder(tmp_path, 'template.dotx')
+    writer = DocxWriter(builder)
+    assert writer.template_path == dotx
+    assert writer.docx_container is not None
+
+
+def test_dotx_template_preserves_document_content(tmp_path: Path) -> None:
+    """After loading a .dotx template, the body content (paragraphs,
+    styles) should be preserved — the fix only touches the content-type
+    override, not the document part itself."""
+    from docxsphinx.writer import DocxWriter
+
+    # Build a seed .docx with identifiable content.
+    seed = tmp_path / 'seed.docx'
+    seed_doc = Document()
+    seed_doc.add_paragraph('fixture marker text', style='Heading 1')
+    seed_doc.save(str(seed))
+
+    dotx = tmp_path / 'styled.dotx'
+    _synthesise_dotx(seed, dotx)
+
+    builder = _make_template_builder(tmp_path, 'styled.dotx')
+    writer = DocxWriter(builder)
+    texts = [p.text for p in writer.docx_container.paragraphs]
+    assert 'fixture marker text' in texts, texts
+
+
 def test_numref_reference_renders_as_hyperlink(
     fake_builder: SimpleNamespace,
 ) -> None:
