@@ -1,0 +1,88 @@
+# docxsphinx fingerprint for example-0.1.docx
+# format-version: 1
+
+paragraphs        147
+tables            2
+inline_shapes     2
+hyperlinks        4
+bookmarks         12
+footnotes         0
+
+# heading texts (in document order)
+  (none)
+
+# paragraph styles (sorted)
+  1                             4
+  12                            1
+  2                             9
+  22                            1
+  23                            1
+  3                             1
+  4                             1
+  ListBullet                    6
+  ListNumber                    1
+  aa                            1
+  ac                            1
+  af2                           7
+  af4                           1
+  af9                           2
+
+# run styles (sorted)
+  25                            2
+  26                            3
+  a3                            5
+  ae                            2
+  af                            2
+  af6                           2
+  af7                           2
+
+# table shapes (document order)
+  3x3  A1
+  3x3  A1
+
+# hyperlinks (sorted)
+  anchor    _Toc228170797                                       1.Ruby on Rails 環境構築手順2
+  anchor    _Toc228170798                                       1.1.インストールしたパッケージ類とバージョン2
+  external  mailto:python.docx@librelist.com                    python.docx@librelist.com
+  external  mailto:python.docx@librelist.com                    python.docx@librelist.com
+
+# bookmark names (sorted)
+  editing-documents
+  id1
+  id2
+  id3
+  id4
+  ideas-questions-want-to-contribute
+  make-and-edit-docx-in-200-lines-of-pure-python
+  making-documents
+  python-docx
+  pythondocx
+  restructuredtext-samples
+  welcome-to-python-s-docx-module
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           186
+  w:t                           159
+  w:p                           147
+  w:rPr                         116
+  w:pPr                         76
+  w:pStyle                      37
+  w:noProof                     23
+  w:ind                         21
+  w:jc                          19
+  w:rStyle                      18
+  w:bookmarkStart               18
+  w:tc                          18
+  w:tcPr                        18
+  w:tcW                         18
+  w:webHidden                   14
+  w:b                           10
+  w:fldChar                     9
+  w:tab                         8
+  w:br                          7
+  w:gridCol                     6
+  w:tr                          6
+  w:kern                        4
+  w:hyperlink                   4
+  w:instrText                   3
+  w:numPr                       3

@@ -38,6 +38,7 @@ EXAMPLES = [
     ('md_mixed', 'md_mixed_project-0.1.docx'),
     ('md_showcase', 'md_showcase_project-0.1.docx'),
     ('md_math', 'md_math_project-0.1.docx'),
+    ('sample_autodoc', 'sample_autodoc_project-0.1.docx'),
 ]
 
 

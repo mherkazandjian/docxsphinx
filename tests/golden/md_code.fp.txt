@@ -1,0 +1,53 @@
+# docxsphinx fingerprint for md_code_project-0.1.docx
+# format-version: 1
+
+paragraphs        11
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         6
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_code — fenced code blocks
+  Heading2      Python
+  Heading2      Bash
+  Heading2      JSON
+  Heading2      No language (plain preformatted)
+  Heading2      Inline code
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      5
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  bash
+  inline-code
+  json
+  md-code-fenced-code-blocks
+  no-language-plain-preformatted
+  python
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           229
+  w:t                           188
+  w:rPr                         177
+  w:br                          41
+  w:b                           13
+  w:p                           11
+  w:pPr                         10
+  w:pStyle                      6
+  w:bookmarkStart               6
+  w:jc                          4
+  w:i                           2
+  w:document                    1
+  w:body                        1

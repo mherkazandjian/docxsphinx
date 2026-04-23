@@ -1,0 +1,67 @@
+# docxsphinx fingerprint for md_images_project-0.1.docx
+# format-version: 1
+
+paragraphs        13
+tables            0
+inline_shapes     7
+hyperlinks        0
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_images — image embedding and sizing
+  Heading2      Plain image (native size)
+  Heading2      Image with width and centered alignment (MyST attrs_block)
+  Heading2      Image with height in cm
+  Heading2      Image with width in pixels
+  Heading2      Inline image inside a paragraph
+  Heading2      Repeated image, native size
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      6
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  image-with-height-in-cm
+  image-with-width-and-centered-alignment-myst-attrs-block
+  image-with-width-in-pixels
+  inline-image-inside-a-paragraph
+  md-images-image-embedding-and-sizing
+  plain-image-native-size
+  repeated-image-native-size
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           19
+  w:p                           13
+  w:t                           12
+  w:pPr                         8
+  w:pStyle                      7
+  w:bookmarkStart               7
+  w:drawing                     7
+  {http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline  7
+  {http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}extent  7
+  {http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}docPr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}cNvGraphicFramePr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}graphicFrameLocks  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}graphic  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}graphicData  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}pic  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}nvPicPr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}cNvPr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}cNvPicPr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}blipFill  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}blip  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}stretch  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}fillRect  7
+  {http://schemas.openxmlformats.org/drawingml/2006/picture}spPr  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}xfrm  7
+  {http://schemas.openxmlformats.org/drawingml/2006/main}off  7

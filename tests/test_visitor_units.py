@@ -1096,3 +1096,135 @@ def test_generic_admonition_uses_custom_title(
     # in the cell — the node.remove() in visit_admonition prevents that.
     following = [p.text for p in cell.paragraphs[1:] if p.text.strip()]
     assert 'My custom heading' not in following, following
+
+
+def test_field_list_renders_as_two_column_table(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """``:param x: …`` field lists (common in docstrings via autodoc) must
+    emit a 2-column table with bold field names in the left column and the
+    field body in the right."""
+    doctree = _blank_document()
+    fl = nodes.field_list()
+    for name, body in (
+        ('param name', 'The person to greet.'),
+        ('returns', 'A greeting string.'),
+    ):
+        field = nodes.field()
+        field += nodes.field_name(text=name)
+        field_body = nodes.field_body()
+        field_body += nodes.paragraph(text=body)
+        field += field_body
+        fl += field
+    doctree += fl
+
+    doc = _walk_doctree(doctree, fake_builder)
+    assert len(doc.tables) == 1, [t for t in doc.tables]
+    table = doc.tables[0]
+    assert len(table.rows) == 2, [r.cells[0].text for r in table.rows]
+    assert len(table.columns) == 2
+    # Left column: field names, bold
+    names = [row.cells[0].text for row in table.rows]
+    assert 'param name' in names[0] or 'name' in names[0], names
+    assert 'returns' in names[1].lower(), names
+    for row in table.rows:
+        runs = row.cells[0].paragraphs[0].runs
+        assert runs and any(r.bold for r in runs), (
+            'field name should be bold',
+            [(r.text, r.bold) for r in runs],
+        )
+    # Right column: field bodies
+    bodies = [row.cells[1].text for row in table.rows]
+    assert 'person to greet' in bodies[0].lower(), bodies
+    assert 'greeting string' in bodies[1].lower(), bodies
+
+
+def test_desc_signature_renders_function_with_parameters(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """A synthetic Sphinx ``desc`` / ``desc_signature`` / ``desc_name`` /
+    ``desc_parameterlist`` tree (the shape autodoc builds) should emit a
+    paragraph containing ``name(param1, param2)`` with the name in bold."""
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    desc = addnodes.desc()
+    desc['domain'] = 'py'
+    desc['objtype'] = 'function'
+    sig = addnodes.desc_signature('', '')
+    sig += addnodes.desc_name('', 'greet')
+    plist = addnodes.desc_parameterlist()
+    plist += addnodes.desc_parameter('', 'name')
+    plist += addnodes.desc_parameter('', 'greeting')
+    sig += plist
+    sig += addnodes.desc_returns('', 'str')
+    desc += sig
+    desc += addnodes.desc_content()
+    doctree += desc
+
+    doc = _walk_doctree(doctree, fake_builder)
+    texts = [p.text for p in doc.paragraphs if p.text.strip()]
+    sig_line = next((t for t in texts if 'greet' in t), None)
+    assert sig_line is not None, texts
+    assert 'greet(name, greeting)' in sig_line, sig_line
+    assert '→' in sig_line and 'str' in sig_line, sig_line
+
+    # The function name run should be bold.
+    bold_runs = [
+        r.text for p in doc.paragraphs for r in p.runs
+        if r.bold and 'greet' in r.text
+    ]
+    assert bold_runs, [(r.text, r.bold) for p in doc.paragraphs for r in p.runs]
+
+
+def test_desc_optional_emits_brackets(fake_builder: SimpleNamespace) -> None:
+    """``desc_optional`` (used for ``f(a[, b[, c]])`` style signatures)
+    must wrap its contents in literal square brackets."""
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    desc = addnodes.desc()
+    desc['domain'] = 'py'
+    desc['objtype'] = 'function'
+    sig = addnodes.desc_signature('', '')
+    sig += addnodes.desc_name('', 'func')
+    plist = addnodes.desc_parameterlist()
+    plist += addnodes.desc_parameter('', 'a')
+    optional = addnodes.desc_optional()
+    optional += addnodes.desc_parameter('', 'b')
+    plist += optional
+    sig += plist
+    desc += sig
+    doctree += desc
+
+    doc = _walk_doctree(doctree, fake_builder)
+    texts = [p.text for p in doc.paragraphs if p.text.strip()]
+    sig_line = next((t for t in texts if 'func' in t), None)
+    assert sig_line is not None, texts
+    # Optional parameters are wrapped in literal '[' / ']' — exact inner
+    # punctuation varies with parameter-list join logic (may render as
+    # '[, b]' or '[b]' depending on whether the optional is first).
+    assert '[' in sig_line and ']' in sig_line, sig_line
+    assert 'func(a' in sig_line and 'b' in sig_line, sig_line
+
+
+def test_desc_addname_module_prefix_hidden(fake_builder: SimpleNamespace) -> None:
+    """``desc_addname`` carries the module prefix (``mymodule.``); we
+    deliberately suppress it to keep signatures compact in Word."""
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    desc = addnodes.desc()
+    desc['domain'] = 'py'
+    desc['objtype'] = 'class'
+    sig = addnodes.desc_signature('', '')
+    sig += addnodes.desc_addname('', 'mymodule.')
+    sig += addnodes.desc_name('', 'Calculator')
+    sig += addnodes.desc_parameterlist()
+    desc += sig
+    doctree += desc
+
+    doc = _walk_doctree(doctree, fake_builder)
+    all_text = ' '.join(p.text for p in doc.paragraphs)
+    assert 'Calculator' in all_text, all_text
+    assert 'mymodule.' not in all_text, all_text

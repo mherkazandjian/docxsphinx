@@ -1,0 +1,63 @@
+# docxsphinx fingerprint for md_math_project-0.1.docx
+# format-version: 1
+
+paragraphs        19
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         5
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_math — LaTeX equations rendered to Word OMML
+  Heading2      Inline math
+  Heading2      Display math
+  Heading2      AMS environments
+  Heading2      Math mixed with prose
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      4
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  ams-environments
+  display-math
+  inline-math
+  math-mixed-with-prose
+  md-math-latex-equations-rendered-to-word-omml
+
+# element tag census (top 25 — excluding noisy infra tags)
+  m:r                           136
+  m:t                           136
+  m:e                           56
+  w:r                           43
+  w:t                           43
+  m:rPr                         39
+  m:sty                         39
+  w:p                           19
+  m:sup                         18
+  m:sSup                        15
+  m:sub                         12
+  m:oMath                       10
+  m:sSub                        9
+  m:d                           8
+  m:dPr                         8
+  m:begChr                      8
+  m:endChr                      8
+  m:sepChr                      8
+  m:grow                        8
+  m:mr                          8
+  m:mc                          7
+  m:mcPr                        7
+  m:mcJc                        7
+  m:count                       7
+  w:pPr                         5

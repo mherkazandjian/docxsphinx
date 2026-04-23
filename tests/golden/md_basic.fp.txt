@@ -1,0 +1,58 @@
+# docxsphinx fingerprint for md_basic_project-0.1.docx
+# format-version: 1
+
+paragraphs        18
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_basic — Markdown sanity demo
+  Heading2      Paragraphs and inline formatting
+  Heading2      Nested headings
+  Heading3      Level three
+  Heading4      Level four
+  Heading2      A short list
+  Heading2      A short numbered list
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      4
+  Heading3                      1
+  Heading4                      1
+  ListBullet                    3
+  ListNumber                    3
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  a-short-list
+  a-short-numbered-list
+  level-four
+  level-three
+  md-basic-markdown-sanity-demo
+  nested-headings
+  paragraphs-and-inline-formatting
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           49
+  w:t                           47
+  w:p                           18
+  w:pPr                         13
+  w:pStyle                      13
+  w:bookmarkStart               7
+  w:rPr                         6
+  w:i                           4
+  w:b                           2
+  w:document                    1
+  w:body                        1
+  w:strike                      1

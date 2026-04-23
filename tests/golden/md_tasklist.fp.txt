@@ -1,0 +1,45 @@
+# docxsphinx fingerprint for md_tasklist_project-0.1.docx
+# format-version: 1
+
+paragraphs        19
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         4
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_tasklist — GFM task-list demo
+  Heading2      Morning routine
+  Heading2      Release checklist
+  Heading2      Mixed with normal bullets
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      3
+  ListBullet                    13
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  md-tasklist-gfm-task-list-demo
+  mixed-with-normal-bullets
+  morning-routine
+  release-checklist
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           23
+  w:t                           23
+  w:p                           19
+  w:pPr                         17
+  w:pStyle                      17
+  w:bookmarkStart               4
+  w:document                    1
+  w:body                        1

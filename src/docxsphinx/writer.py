@@ -377,6 +377,7 @@ class DocxTranslator(nodes.NodeVisitor):
         "The current paragraph that text is being added to."
 
         self._pending_text_prefix: str | None = None
+        self._desc_param_count = 0  # parameter counter for a desc_parameterlist
         "Text to prepend on the next add_text call, then clear. Used by visit_list_item to emit a task-list checkbox glyph that lands in the same paragraph as the task text."
 
         self._bookmark_counter = 0
@@ -532,110 +533,118 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         pass
 
+    # -- autodoc / py-domain descriptions --------------------------------
+    # Sphinx's `sphinx.ext.autodoc` and domain directives (`.. py:function::`
+    # etc.) emit a `desc` container with a `desc_signature` header and a
+    # `desc_content` body. We render the signature as a bold paragraph
+    # (name + parameters + return type), hide the dotted module prefix
+    # (`desc_addname`) for readability, and let the body's paragraphs +
+    # field_list flow at the current location. Previously every desc_*
+    # visitor was SkipNode, so autodoc output vanished entirely — see
+    # GitHub issue #16.
+
     def visit_desc(self, node):
         dprint()
-        pass
 
     def depart_desc(self, node):
         dprint()
-        pass
 
     def visit_desc_signature(self, node):
+        """Start a new paragraph for the signature line; children populate it."""
         dprint()
-        raise nodes.SkipNode
+        self.current_paragraph = self.current_state.location.add_paragraph()
+        self._desc_param_count = 0
 
     def depart_desc_signature(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_desc_name(self, node):
+        """The canonical name (function / class / attribute) — bold."""
         dprint()
-        pass
+        self.current_paragraph.add_run(node.astext()).bold = True
+        raise nodes.SkipNode
 
     def depart_desc_name(self, node):
         dprint()
-        pass
 
     def visit_desc_addname(self, node):
+        """The module-qualified prefix (e.g. ``foo.bar.``). Dropped for
+        readability — the containing section usually provides the module."""
         dprint()
-        pass
+        raise nodes.SkipNode
 
     def depart_desc_addname(self, node):
         dprint()
-        pass
 
     def visit_desc_type(self, node):
+        """Inline type annotation on an attribute / variable description."""
         dprint()
-        pass
+        self.current_paragraph.add_run(node.astext())
+        raise nodes.SkipNode
 
     def depart_desc_type(self, node):
         dprint()
-        pass
 
     def visit_desc_returns(self, node):
+        """Return-type annotation appended to the signature, e.g. ``-> bool``."""
         dprint()
+        self.current_paragraph.add_run(f' → {node.astext()}')
         raise nodes.SkipNode
-        # self.add_text(' -> ')
 
     def depart_desc_returns(self, node):
         dprint()
-        pass
 
     def visit_desc_parameterlist(self, node):
+        """Open the parameter list with ``(``; children add params + commas."""
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('(')
-        # self.first_param = 1
+        self.current_paragraph.add_run('(')
+        self._desc_param_count = 0
 
     def depart_desc_parameterlist(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(')')
+        self.current_paragraph.add_run(')')
 
     def visit_desc_parameter(self, node):
+        """One parameter; inject a ``, `` separator if we've already emitted one."""
         dprint()
+        if self._desc_param_count > 0:
+            self.current_paragraph.add_run(', ')
+        self._desc_param_count += 1
+        self.current_paragraph.add_run(node.astext())
         raise nodes.SkipNode
-        # if not self.first_param:
-        #     self.add_text(', ')
-        # else:
-        #     self.first_param = 0
-        # self.add_text(node.astext())
-        # raise nodes.SkipNode
 
     def visit_desc_optional(self, node):
+        """Wrap optional parameters in ``[...]`` per Python signature conventions."""
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('[')
+        self.current_paragraph.add_run('[')
 
     def depart_desc_optional(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(']')
+        self.current_paragraph.add_run(']')
 
     def visit_desc_annotation(self, node):
+        """Inline annotation like ``class `` before a class signature."""
         dprint()
-        pass
+        self.current_paragraph.add_run(node.astext())
+        raise nodes.SkipNode
 
     def depart_desc_annotation(self, node):
         dprint()
-        pass
 
     def visit_refcount(self, node):
         dprint()
-        pass
 
     def depart_refcount(self, node):
         dprint()
-        pass
 
     def visit_desc_content(self, node):
+        """Body of a description: docstring paragraphs + field list. Walked
+        normally — paragraphs emit as regular paragraphs and field_list
+        renders as a 2-col table (see visit_field_list)."""
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('\n')
 
     def depart_desc_content(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_figure(self, node):
         """Record a figure number for the `ids` on this node so :numref:
@@ -1182,38 +1191,50 @@ class DocxTranslator(nodes.NodeVisitor):
         dprint()
         self.end_state()
 
+    # -- field lists -----------------------------------------------------
+    # Render field_list as a 2-col table (name | body). Primary consumer
+    # is autodoc's ``:param:``/``:returns:``/``:raises:`` fields, but
+    # docutils document metadata (``:author:``/``:version:``) and any
+    # user-provided field list render the same way. The pattern mirrors
+    # visit_definition_list.
+
     def visit_field_list(self, node):
         dprint()
-        pass
+        self.new_state(location=self.current_state.location)
+        self.current_state.table = self.current_state.location.add_table(rows=0, cols=2)
 
     def depart_field_list(self, node):
         dprint()
-        pass
+        self.end_state()
 
     def visit_field(self, node):
         dprint()
-        pass
+        self.current_state.row = self.current_state.table.add_row()
 
     def depart_field(self, node):
         dprint()
-        pass
 
     def visit_field_name(self, node):
         dprint()
+        cell = self.current_state.row.cells[0]
+        cell.paragraphs[0].add_run(node.astext()).bold = True
         raise nodes.SkipNode
 
     def depart_field_name(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(':')
 
     def visit_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
+        cell = self.current_state.row.cells[1]
+        self.new_state(location=cell)
+        if not cell.paragraphs[0].text:
+            self.current_paragraph = cell.paragraphs[0]
+        else:
+            self.current_paragraph = cell.add_paragraph()
 
     def depart_field_body(self, node):
         dprint()
-        raise nodes.SkipNode
+        self.end_state()
 
     def visit_centered(self, node):
         dprint()

@@ -78,6 +78,7 @@ markers = [
     "unit: pure-unit tests of the visitor against hand-built doctrees (no subprocess, no disk I/O)",
     "integration: visitor + python-docx working together on parsed RST/MD, inspecting the resulting Document in-memory",
     "e2e: full sphinx-build subprocess producing a .docx on disk, validated structurally",
+    "golden: fingerprint regression check — .docx content against a committed golden",
 ]
 
 [tool.ruff]

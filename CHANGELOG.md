@@ -16,6 +16,47 @@ worth matching.
 
 ### Added
 
+- **Autodoc rendering (closes #16).** Sphinx's `sphinx.ext.autodoc`
+  description nodes now emit into Word. Previously `visit_desc_*` and
+  `visit_field_*` were `SkipNode` stubs, so `.. automodule::` /
+  `.. autoclass::` / `.. autofunction::` directives silently lost every
+  signature and every docstring field list (`:param:`, `:returns:`,
+  `:raises:`, `:type:`) — only the prose survived.
+  - `desc_signature` opens a fresh paragraph for each object.
+  - `desc_name` renders the object identifier **bold**;
+    `desc_addname` suppresses the module prefix to keep signatures
+    compact.
+  - `desc_parameterlist` wraps children in literal `(` / `)`;
+    `desc_parameter` joins children with `, ` separators;
+    `desc_optional` wraps in `[` / `]` for Python-style optional
+    argument syntax.
+  - `desc_returns` prepends `→ ` before the return type annotation.
+  - `desc_annotation` / `desc_type` render inline (kept as plain text
+    since OOXML has no dedicated typing construct).
+  - `field_list` / `field` / `field_name` / `field_body` now emit as a
+    2-column table (bold field name left, body right) mirroring the
+    existing `definition_list` pattern — so docstring parameter/return
+    documentation becomes a proper Word table instead of vanishing.
+  New `examples/sample_autodoc/` project exercises the full stack:
+  in-repo `mymodule.py` with class + method + function + docstring
+  fields, rendered via `.. automodule::`. Committed golden fingerprint
+  at `tests/golden/sample_autodoc.fp.txt`.
+- **Content-fingerprint golden-file regression suite (closes #15).**
+  New `tests/_fingerprint.py` extracts a deterministic text signature
+  from a `.docx` (paragraph / table / inline-shape / hyperlink /
+  bookmark / footnote counts, paragraph- and run-style distributions,
+  heading texts in document order, table shapes with first-cell-text
+  previews, hyperlink targets + link text, bookmark names, OOXML
+  element-tag census). One golden fingerprint per example is
+  committed under `tests/golden/` (17 files); `tests/test_golden.py`
+  (markers: `e2e` + new `golden`) rebuilds each example and diffs the
+  fresh fingerprint against the committed one. Legitimate output
+  changes flow through `make golden-update` (sets
+  `UPDATE_GOLDEN=1`) which rewrites the goldens and surfaces the
+  diff in the next PR for review. Regressions that silently drop
+  content (e.g. a visitor starts `SkipNode`-ing, a helper stops
+  emitting a bookmark) produce a visible text diff in CI instead of
+  hiding behind "the .docx is still a valid zip".
 - **LaTeX math rendering (closes #11).** `math` (inline `:math:` role,
   MyST `$...$`) and `math_block` (`.. math::` directive, MyST `$$...$$`,
   AMS environments like `\begin{align}...\end{align}`) nodes now render

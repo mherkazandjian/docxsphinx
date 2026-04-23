@@ -1,0 +1,67 @@
+# docxsphinx fingerprint for md_lists_project-0.1.docx
+# format-version: 1
+
+paragraphs        31
+tables            1
+inline_shapes     0
+hyperlinks        0
+bookmarks         6
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_lists — list variants
+  Heading2      Bullet lists
+  Heading2      Numbered lists
+  Heading2      Nested bullets
+  Heading2      Mixed nesting
+  Heading2      Definition list (MyST deflist)
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      5
+  ListBullet                    5
+  ListBullet2                   5
+  ListBullet3                   2
+  ListNumber                    5
+  ListNumber2                   2
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  2x2  Term 1
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  bullet-lists
+  definition-list-myst-deflist
+  md-lists-list-variants
+  mixed-nesting
+  nested-bullets
+  numbered-lists
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:p                           31
+  w:r                           30
+  w:t                           30
+  w:pPr                         28
+  w:pStyle                      25
+  w:bookmarkStart               6
+  w:tc                          4
+  w:tcPr                        4
+  w:tcW                         4
+  w:ind                         3
+  w:jc                          3
+  w:gridCol                     2
+  w:tr                          2
+  w:rPr                         2
+  w:b                           2
+  w:document                    1
+  w:body                        1
+  w:tbl                         1
+  w:tblPr                       1
+  w:tblW                        1
+  w:tblLook                     1
+  w:tblGrid                     1

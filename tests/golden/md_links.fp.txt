@@ -1,0 +1,67 @@
+# docxsphinx fingerprint for md_links_project-0.1.docx
+# format-version: 1
+
+paragraphs        16
+tables            0
+inline_shapes     0
+hyperlinks        11
+bookmarks         8
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_links — links and cross-references
+  Heading2      External URLs
+  Heading2      Reference-style links
+  Heading2      Intra-document anchors
+  Heading2      Target section
+  Heading2      Link in a list
+  Heading2      Link with inline formatting
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      6
+  ListBullet                    3
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  anchor    target-section                                      below
+  external  https://example.com/                                bolded link text
+  external  https://example.net/                                struck link
+  external  https://example.org/                                link with inline code
+  external  https://github.com/mherkazandjian/docxsphinx        docxsphinx on GitHub
+  external  https://github.com/mherkazandjian/docxsphinx        github.com/mherkazandjian/docxsphinx
+  external  https://myst-parser.readthedocs.io/                 MyST project
+  external  https://pypi.org/                                   PyPI
+  external  https://python-docx.readthedocs.io/                 python-docx guide
+  external  https://www.python.org/                             Python
+  external  https://www.sphinx-doc.org/                         Sphinx documentation
+
+# bookmark names (sorted)
+  external-urls
+  id1
+  intra-document-anchors
+  link-in-a-list
+  link-with-inline-formatting
+  md-links-links-and-cross-references
+  reference-style-links
+  target-section
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           51
+  w:t                           51
+  w:p                           16
+  w:rPr                         12
+  w:u                           12
+  w:hyperlink                   11
+  w:pPr                         10
+  w:pStyle                      10
+  w:bookmarkStart               8
+  w:document                    1
+  w:body                        1
+  w:b                           1
+  w:strike                      1

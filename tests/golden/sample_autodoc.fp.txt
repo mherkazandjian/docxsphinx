@@ -1,0 +1,61 @@
+# docxsphinx fingerprint for sample_autodoc_project-0.1.docx
+# format-version: 1
+
+paragraphs        32
+tables            3
+inline_shapes     0
+hyperlinks        1
+bookmarks         3
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      sample_autodoc — Sphinx autodoc rendered to Word
+  Heading2      Module reference
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      1
+  ListBullet                    4
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  4x2  Parameters
+  1x2  Parameters
+  3x2  Parameters
+
+# hyperlinks (sorted)
+  anchor    module-mymodule                                     mymodule
+
+# bookmark names (sorted)
+  module-mymodule
+  module-reference
+  sample-autodoc-sphinx-autodoc-rendered-to-word
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           117
+  w:t                           117
+  w:p                           32
+  w:rPr                         17
+  w:tc                          16
+  w:tcPr                        16
+  w:tcW                         16
+  w:pPr                         12
+  w:b                           12
+  w:tr                          8
+  w:pStyle                      6
+  w:gridCol                     6
+  w:ind                         6
+  w:jc                          6
+  w:i                           4
+  w:bookmarkStart               3
+  w:tbl                         3
+  w:tblPr                       3
+  w:tblW                        3
+  w:tblLook                     3
+  w:tblGrid                     3
+  w:document                    1
+  w:body                        1
+  w:hyperlink                   1
+  w:u                           1

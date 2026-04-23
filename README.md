@@ -42,6 +42,7 @@ release notes.
 | Fenced code blocks (python, bash, JSON, …) | Pygments-coloured monospace runs, line breaks via `w:br` |
 | Footnotes and citations with inline formatting | Word-native `word/footnotes.xml` part + superscripted references |
 | LaTeX math (`:math:`, `.. math::`, MyST `$…$` / `$$…$$`, AMS environments) | Native Office Math Markup Language (OMML) via pandoc; editable in Word's equation editor |
+| `sphinx.ext.autodoc` (`.. automodule::`, `.. autoclass::`, `.. autofunction::`) | Function / method / class signatures with bold names, parameter lists, optional-arg `[…]` brackets, return-type arrows; docstring `:param:` / `:returns:` / `:raises:` field lists as 2-column tables |
 
 Features not yet implemented (tracked on the roadmap):
 versionadded/deprecated directives, Word-native TOC field, native
@@ -194,7 +195,7 @@ Reports land in `examples/corpus/reports/` (gitignored).
 
 ## Examples
 
-Fifteen ready-to-build Sphinx projects live in [`examples/`](examples/):
+Sixteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 
 | RST | Markdown |
 |---|---|
@@ -204,7 +205,7 @@ Fifteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 | `sample_4` — variation | `md_tables` — GFM pipe tables |
 | `sample_5` — styled template | `md_code` — fenced code blocks (python / bash / json) |
 | `sample_6` — styled template | `md_images` — native + sized + aligned images |
-| | `md_links` — external URLs and intra-doc anchors |
+| `sample_autodoc` — `sphinx.ext.autodoc` against an in-repo Python module | `md_links` — external URLs and intra-doc anchors |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` / all types |
 | | `md_mixed` — RST and MD source files in one project |
 | | `md_math` — LaTeX equations → OMML (inline, display, AMS environments) |
@@ -258,8 +259,13 @@ Four tiers, each selectable via a marker or a Make target:
 | Unit | `unit` | `make test-unit` | Hand-built doctrees → visitor → `Document`, no subprocess |
 | Integration | `integration` | `make test-integration` | Parsed RST / MD → visitor → `Document`, in-memory inspection |
 | End-to-end | `e2e` | `make test-e2e` | `sphinx-build` subprocess per example, zip-valid output, `docx2md` round-trip |
+| Golden | `golden` | `make test-golden` | Fingerprint regression against `tests/golden/<sample>.fp.txt` — catches silent content loss |
 
 Inner-loop target: `make test-fast` (everything except e2e).
+
+When a feature change intentionally alters the content fingerprint,
+regenerate the goldens with `make golden-update` (sets `UPDATE_GOLDEN=1`
+under the hood) and review the text diff in your PR.
 
 ### Profiling
 

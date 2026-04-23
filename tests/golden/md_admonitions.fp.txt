@@ -1,0 +1,77 @@
+# docxsphinx fingerprint for md_admonitions_project-0.1.docx
+# format-version: 1
+
+paragraphs        34
+tables            11
+inline_shapes     0
+hyperlinks        0
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_admonitions — MyST admonition directives
+  Heading2      Note
+  Heading2      Warning
+  Heading2      Tip
+  Heading2      Caution, important, hint, error, danger, attention
+  Heading2      Custom admonition
+  Heading2      Admonition with a multi-paragraph body
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      6
+  ListBullet                    2
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  1x1  NoteThis is a short note callout with a 
+  1x1  WarningProceed with caution: the operati
+  1x1  TipYou can use make example DIR=md_admon
+  1x1  CautionMoving parts — keep fingers clear
+  1x1  ImportantRead the release notes before u
+  1x1  HintTry pytest -m unit for a faster inne
+  1x1  ErrorFailed to open the document.
+  1x1  DangerDo not taunt happy-fun-ball.
+  1x1  AttentionThe deprecation takes effect in
+  1x1  Custom headingWith custom body content.
+  1x1  NoteParagraph one inside the admonition.
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  admonition-with-a-multi-paragraph-body
+  caution-important-hint-error-danger-attention
+  custom-admonition
+  md-admonitions-myst-admonition-directives
+  note
+  tip
+  warning
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           68
+  w:t                           66
+  w:p                           34
+  w:pPr                         22
+  w:rPr                         19
+  w:jc                          13
+  w:b                           12
+  w:ind                         12
+  w:tbl                         11
+  w:tblPr                       11
+  w:tblW                        11
+  w:tblLook                     11
+  w:tblGrid                     11
+  w:gridCol                     11
+  w:tr                          11
+  w:tc                          11
+  w:tcPr                        11
+  w:tcW                         11
+  w:pStyle                      9
+  w:bookmarkStart               7
+  w:br                          2
+  w:document                    1
+  w:body                        1
+  w:i                           1

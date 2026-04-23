@@ -1,0 +1,132 @@
+# docxsphinx fingerprint for md_showcase_project-0.1.docx
+# format-version: 1
+
+paragraphs        120
+tables            13
+inline_shapes     6
+hyperlinks        7
+bookmarks         28
+footnotes         2
+
+# heading texts (in document order)
+  Heading1      md_showcase — every docxsphinx feature, in one Markdown file
+  Heading2      Headings
+  Heading3      Level three
+  Heading4      Level four
+  Heading2      Inline formatting
+  Heading2      Bullet list
+  Heading2      Numbered list
+  Heading2      Nested lists (mixed types)
+  Heading2      Task list (GFM checkboxes)
+  Heading2      Definition list
+  Heading2      GFM pipe table
+  Heading2      Fenced code blocks
+  Heading3      Python
+  Heading3      Bash
+  Heading3      JSON
+  Heading3      Plain (no language)
+  Heading2      Images
+  Heading2      External hyperlinks
+  Heading2      Internal anchor links
+  Heading2      Custom anchor target
+  Heading2      Admonitions (every type)
+  Heading2      Figures with captions
+  Heading2      Footnotes with inline formatting
+  Heading2      Blockquote
+  Heading2      Horizontal rule
+
+# paragraph styles (sorted)
+  Caption                       2
+  Heading1                      1
+  Heading2                      18
+  Heading3                      5
+  Heading4                      1
+  ListBullet                    12
+  ListBullet2                   2
+  ListBullet3                   1
+  ListNumber                    5
+  ListNumber2                   2
+
+# run styles (sorted)
+  FootnoteReference             2
+
+# table shapes (document order)
+  3x2  docxsphinx
+  5x3  Component
+  1x1  NoteA short note callout with bold and i
+  1x1  WarningProceed with caution: the operati
+  1x1  TipYou can use make example DIR=md_showc
+  1x1  CautionMoving parts — keep fingers clear
+  1x1  ImportantRead the release notes before u
+  1x1  HintTry make test-fast for a faster inne
+  1x1  ErrorFailed to open the document.
+  1x1  DangerDo not taunt happy-fun-ball.
+  1x1  AttentionThe deprecation takes effect in
+  1x1  Custom headingGeneric admonitions take t
+  1x1  NoteA multi-paragraph note.The second pa
+
+# hyperlinks (sorted)
+  anchor    admonitions-every-type                              the admonitions section below
+  anchor    footnotes-with-inline-formatting                    the footnotes section below
+  external  https://example.com/                                bold link text
+  external  https://example.net/                                struck link text
+  external  https://example.org/                                italic link text
+  external  https://python-docx.readthedocs.io/                 python-docx guide
+  external  https://www.sphinx-doc.org/                         Sphinx documentation
+
+# bookmark names (sorted)
+  admonitions-every-type
+  bash
+  blockquote
+  bullet-list
+  custom-anchor-target
+  custom-target
+  definition-list
+  external-hyperlinks
+  fenced-code-blocks
+  figures-with-captions
+  footnotes-with-inline-formatting
+  gfm-pipe-table
+  headings
+  horizontal-rule
+  id3
+  id4
+  images
+  inline-formatting
+  internal-anchor-links
+  json
+  level-four
+  level-three
+  md-showcase-every-docxsphinx-feature-in-one-markdown-file
+  nested-lists-mixed-types
+  numbered-list
+  plain-no-language
+  python
+  task-list-gfm-checkboxes
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           465
+  w:t                           401
+  w:rPr                         218
+  w:p                           120
+  w:pPr                         85
+  w:br                          53
+  w:pStyle                      49
+  w:b                           38
+  w:jc                          36
+  w:tc                          32
+  w:tcPr                        32
+  w:tcW                         32
+  w:ind                         30
+  w:bookmarkStart               28
+  w:tr                          19
+  w:gridCol                     16
+  w:tbl                         13
+  w:tblPr                       13
+  w:tblW                        13
+  w:tblLook                     13
+  w:tblGrid                     13
+  w:i                           9
+  w:hyperlink                   7
+  w:u                           7
+  w:drawing                     6

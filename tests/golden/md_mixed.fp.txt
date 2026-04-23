@@ -1,0 +1,66 @@
+# docxsphinx fingerprint for md_mixed_project-0.1.docx
+# format-version: 1
+
+paragraphs        19
+tables            1
+inline_shapes     0
+hyperlinks        0
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_mixed — Markdown and reStructuredText side-by-side
+  Heading2      Why mix formats?
+  Heading1      Appendix written in reStructuredText
+  Heading2      A reStructuredText list
+  Heading2      A reStructuredText note
+  Heading2      Inline roles and formatting
+  Heading1      A Markdown bullet list
+
+# paragraph styles (sorted)
+  Heading1                      3
+  Heading2                      4
+  ListBullet                    6
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  1x1  NoteThis admonition will render once Pha
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  a-markdown-bullet-list
+  a-restructuredtext-list
+  a-restructuredtext-note
+  appendix-written-in-restructuredtext
+  inline-roles-and-formatting
+  md-mixed-markdown-and-restructuredtext-side-by-side
+  why-mix-formats
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           37
+  w:t                           37
+  w:p                           19
+  w:pPr                         14
+  w:pStyle                      13
+  w:bookmarkStart               7
+  w:rPr                         3
+  w:b                           2
+  w:document                    1
+  w:body                        1
+  w:tbl                         1
+  w:tblPr                       1
+  w:tblW                        1
+  w:tblLook                     1
+  w:tblGrid                     1
+  w:gridCol                     1
+  w:tr                          1
+  w:tc                          1
+  w:tcPr                        1
+  w:tcW                         1
+  w:ind                         1
+  w:jc                          1
+  w:i                           1

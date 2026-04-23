@@ -1,0 +1,64 @@
+# docxsphinx fingerprint for md_tables_project-0.1.docx
+# format-version: 1
+
+paragraphs        44
+tables            4
+inline_shapes     0
+hyperlinks        0
+bookmarks         5
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      md_tables — GFM pipe tables
+  Heading2      A three-column product table
+  Heading2      Aligned columns
+  Heading2      Headers only
+  Heading2      Inline formatting in cells
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      4
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  4x3  Product
+  3x3  Left-aligned
+  2x3  Column A
+  4x2  Name
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  a-three-column-product-table
+  aligned-columns
+  headers-only
+  inline-formatting-in-cells
+  md-tables-gfm-pipe-tables
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           47
+  w:p                           44
+  w:t                           41
+  w:pPr                         40
+  w:tc                          35
+  w:tcPr                        35
+  w:tcW                         35
+  w:ind                         35
+  w:jc                          35
+  w:tr                          13
+  w:gridCol                     11
+  w:pStyle                      5
+  w:bookmarkStart               5
+  w:tbl                         4
+  w:tblPr                       4
+  w:tblW                        4
+  w:tblLook                     4
+  w:tblGrid                     4
+  w:rPr                         4
+  w:b                           3
+  w:document                    1
+  w:body                        1
+  w:i                           1

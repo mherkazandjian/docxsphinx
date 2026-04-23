@@ -1,0 +1,71 @@
+# docxsphinx fingerprint for my_foo_project-0.0.0.docx
+# format-version: 1
+
+paragraphs        54
+tables            7
+inline_shapes     0
+hyperlinks        0
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Welcome to this nested tables test
+  Heading2      Table 1
+  Heading2      Table 2
+  Heading2      Table 3
+  Heading2      Table 4
+  Heading2      List 1
+  Heading2      List 2
+
+# paragraph styles (sorted)
+  Heading1                      1
+  Heading2                      6
+  ListBullet                    7
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  2x2  Hello
+  2x2  Hello
+  2x2  Hello
+  1x2  A
+  2x3  Hello
+  2x2  A
+  2x2  Hello
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  list-1
+  list-2
+  table-1
+  table-2
+  table-3
+  table-4
+  welcome-to-this-nested-tables-test
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:p                           54
+  w:r                           42
+  w:t                           42
+  w:pPr                         37
+  w:tc                          26
+  w:tcPr                        26
+  w:tcW                         26
+  w:ind                         23
+  w:jc                          23
+  w:gridCol                     15
+  w:pStyle                      14
+  w:tr                          13
+  w:bookmarkStart               7
+  w:tbl                         7
+  w:tblPr                       7
+  w:tblW                        7
+  w:tblLook                     7
+  w:tblGrid                     7
+  w:tblStyle                    4
+  w:gridSpan                    2
+  w:document                    1
+  w:body                        1

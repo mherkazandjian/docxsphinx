@@ -32,7 +32,7 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build shell test test-smoke test-unit test-integration test-e2e test-fast test-all lint cov example profile roundtrip release-check clean distclean
+.PHONY: help build shell test test-smoke test-unit test-integration test-e2e test-golden test-fast test-all golden-update lint cov example profile roundtrip release-check clean distclean
 
 # roundtrip corpus defaults: `make roundtrip` analyses the committed
 # fixture set; `make roundtrip CORPUS=corpus` analyses the user's private
@@ -64,6 +64,12 @@ test-integration: ## Integration tier only (visitor + python-docx, in-memory)
 
 test-e2e: ## End-to-end tier only (sphinx-build subprocess per example)
 	$(RUN) pytest -v -m e2e
+
+test-golden: ## Content-fingerprint regression vs committed goldens
+	$(RUN) pytest -v -m golden
+
+golden-update: ## Rebuild goldens after intentional output changes (review the diff!)
+	$(RUN) env UPDATE_GOLDEN=1 pytest -v -m golden
 
 test-fast: ## Smoke + unit + integration (skip slow e2e)
 	$(RUN) pytest -v -m "smoke or unit or integration"

@@ -1,0 +1,49 @@
+# docxsphinx fingerprint for my_foo_project-0.0.0.docx
+# format-version: 1
+
+paragraphs        8
+tables            0
+inline_shapes     0
+hyperlinks        0
+bookmarks         5
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Welcome to my_foo_project’s documentation!
+  Heading2      Sphinx Tutorial
+  Heading3      Getting Set Up
+  Heading4      Philosophy
+  Heading1      Indices and tables
+
+# paragraph styles (sorted)
+  Heading1                      2
+  Heading2                      1
+  Heading3                      1
+  Heading4                      1
+  ListBullet                    3
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  (none)
+
+# hyperlinks (sorted)
+  (none)
+
+# bookmark names (sorted)
+  getting-set-up
+  indices-and-tables
+  philosophy
+  sphinx-tutorial
+  welcome-to-my-foo-project-s-documentation
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:p                           8
+  w:pPr                         8
+  w:pStyle                      8
+  w:r                           8
+  w:t                           8
+  w:bookmarkStart               5
+  w:document                    1
+  w:body                        1
