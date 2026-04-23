@@ -7,12 +7,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [2.1.0] — _unreleased_
+## [2.1.0] — 2026-04-23
 
 Adds a reverse pipeline (`.docx` → Markdown / RST), LaTeX math
-rendering via pandoc's OMML conversion, and the research harness that
-uses the reverse pipeline to identify forward-direction OOXML idioms
-worth matching.
+rendering via pandoc's OMML conversion, multi-output projects via
+`docx_documents`, Sphinx autodoc rendering, and a batch of long-open
+bug fixes (templates_path lookup, `:numref:` references, `.dotx`
+templates, nested-toctree heading depth).
 
 ### Fixed
 
