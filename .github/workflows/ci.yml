@@ -57,8 +57,20 @@ jobs:
   docker-smoke:
     name: Docker smoke
     runs-on: ubuntu-latest
+    # The Dockerfile creates a non-root ``dev`` user at build time with
+    # UID/GID injected as build args (defaults 1000:1000 — matches a
+    # typical Linux workstation but NOT the GitHub Actions runner, which
+    # owns the checked-out workspace as UID 1001). The Resolve step
+    # below exports the runner's real UID/GID so the container user can
+    # write back to the bind-mount during tests (sphinx-build creates
+    # examples/<sample>/build/).
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve runner UID/GID for docker compose
+        run: |
+          echo "UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "GID=$(id -g)" >> "$GITHUB_ENV"
 
       - name: Build dev image
         run: docker compose build
