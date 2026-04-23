@@ -39,6 +39,7 @@ release notes.
 | Admonitions — `note` / `warning` / `tip` / `caution` / `error` / `danger` / `important` / `hint` / `attention` + generic | 1×1 wrapping table with bold title run + body |
 | External hyperlinks | `w:hyperlink` with `r:id` + inline formatting inside link text |
 | Internal references (`:ref:`, `[text](#id)`, `(label)=`) | `w:hyperlink` with `w:anchor` targeting auto-emitted section bookmarks |
+| Numbered references (`:numref:` with `numfig = True`) | Clickable `w:hyperlink` carrying Sphinx's formatted label ("Fig. 1" / "Table 3" / etc.) |
 | Fenced code blocks (python, bash, JSON, …) | Pygments-coloured monospace runs, line breaks via `w:br` |
 | Footnotes and citations with inline formatting | Word-native `word/footnotes.xml` part + superscripted references |
 | LaTeX math (`:math:`, `.. math::`, MyST `$…$` / `$$…$$`, AMS environments) | Native Office Math Markup Language (OMML) via pandoc; editable in Word's equation editor |

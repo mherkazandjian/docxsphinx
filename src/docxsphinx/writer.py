@@ -1514,6 +1514,14 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_reference(self, node):
         dprint()
 
+    # ``:numref:`` resolves to a ``nodes.number_reference`` — shape-compatible
+    # with ``nodes.reference`` (has ``refid`` / ``refuri`` and a child
+    # ``inline`` carrying the formatted text like "Fig. 1" / "Table 3").
+    # Route it through the same hyperlink emitter so the Word reader clicks
+    # back to the section bookmark at the figure id.
+    visit_number_reference = visit_reference
+    depart_number_reference = depart_reference
+
     def visit_download_reference(self, node):
         dprint()
         pass

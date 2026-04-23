@@ -14,6 +14,20 @@ rendering via pandoc's OMML conversion, and the research harness that
 uses the reverse pipeline to identify forward-direction OOXML idioms
 worth matching.
 
+### Fixed
+
+- **`:numref:` references render correctly (closes #36).** Sphinx
+  resolves ``:numref:`<label>``` to a `sphinx.addnodes.number_reference`
+  wrapping an `inline` with formatted text like "Fig. 1" / "Table 3".
+  Previously the writer had no `visit_number_reference`, so the default
+  `unknown_visit` silently `SkipNode`-ed it — "numbered reference
+  Fig. 1" rendered as "numbered reference ". The new alias routes
+  `number_reference` through `visit_reference`, producing a clickable
+  Word hyperlink to the figure/table section bookmark with the
+  Sphinx-formatted label as the link text. The figure-caption portion
+  of the original report was already fixed in 2.0.0 Phase 2.7 (`Caption`
+  style + `SEQ Figure` field); this closes the remaining `:numref:` gap.
+
 ### Added
 
 - **`templates_path` honoured for `docx_template` lookup (closes #22).**

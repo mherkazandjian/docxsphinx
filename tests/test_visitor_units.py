@@ -1286,6 +1286,42 @@ def test_template_path_absolute_path_untouched(tmp_path: Path) -> None:
     assert writer.template_path == template
 
 
+def test_numref_reference_renders_as_hyperlink(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """`:numref:` resolves to a ``docutils.nodes.number_reference`` wrapping
+    an inline with formatted text like "Fig. 1". Before the fix for #36,
+    no ``visit_number_reference`` existed so ``unknown_visit`` silently
+    skipped the whole node — references like "numbered reference Fig. 1"
+    rendered as "numbered reference ". Now it routes through the same
+    internal-hyperlink emitter as regular ``:ref:``."""
+    from docx.oxml.ns import qn
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    para = nodes.paragraph()
+    para += nodes.Text('see ')
+    numref = addnodes.number_reference(
+        '', '', refid='first-figure', title='Fig. %s',
+    )
+    numref['internal'] = True
+    inner = nodes.inline(classes=['std', 'std-numref'])
+    inner += nodes.Text('Fig. 1')
+    numref += inner
+    para += numref
+    doctree += para
+
+    doc = _walk_doctree(doctree, fake_builder)
+    # The paragraph should contain a hyperlink to the figure anchor with
+    # the resolved "Fig. 1" text.
+    hyperlinks = doc.paragraphs[0]._element.findall('.//' + qn('w:hyperlink'))
+    assert len(hyperlinks) == 1, [p.text for p in doc.paragraphs]
+    hl = hyperlinks[0]
+    assert hl.get(qn('w:anchor')) == 'first-figure'
+    text = ''.join(t.text or '' for t in hl.findall('.//' + qn('w:t')))
+    assert text == 'Fig. 1', text
+
+
 def test_template_path_templates_path_takes_precedence(tmp_path: Path) -> None:
     """When the same filename exists in both a ``templates_path`` entry
     and ``srcdir``, the ``templates_path`` copy wins (users who set
