@@ -94,8 +94,8 @@ class DocxBuilder(Builder):
 
     def fix_refuris(self, tree: nodes.Element) -> None:
         """Strip double-anchor refuris down to a single in-document anchor."""
-        fname = self.config.master_doc + self.out_suffix
-        for refnode in tree.traverse(nodes.reference):
+        fname = _root_doc(self.config) + self.out_suffix
+        for refnode in tree.findall(nodes.reference):
             if 'refuri' not in refnode:
                 continue
             refuri = refnode['refuri']
@@ -106,9 +106,9 @@ class DocxBuilder(Builder):
             if hashindex >= 0:
                 refnode['refuri'] = fname + refuri[hashindex:]
 
-    def prepare_writing(self, docnames) -> None:
+    def prepare_writing(self, docnames: set[str]) -> None:
         # No longer a single-writer builder: one writer is instantiated per
-        # output entry in ``write()`` so that each can carry its own
+        # output entry in ``write_documents()`` so that each can carry its own
         # template and start from a clean ``Document``. Preserved as a
         # no-op for the Sphinx builder contract.
         pass
@@ -148,7 +148,7 @@ class DocxBuilder(Builder):
 
         default_name = f'{self.config.project}-{self.config.version}'
         return [DocxDocumentEntry(
-            startdoc=self.config.master_doc,
+            startdoc=_root_doc(self.config),
             targetname=default_name,
             template=None,
             toctree_only=False,
@@ -172,11 +172,13 @@ class DocxBuilder(Builder):
         toctree_only = bool(parts[3]) if len(parts) >= 4 else False
         return DocxDocumentEntry(startdoc, targetname, template, toctree_only)
 
-    def write(self, *ignored) -> None:
-        logger.info(bold('preparing documents... '), nonl=True)
-        self.prepare_writing(self.env.all_docs)
-        logger.info('done')
+    def write_documents(self, docnames: set[str]) -> None:
+        """Write the configured docx outputs.
 
+        Sphinx 9 makes ``Builder.write()`` part of the final framework
+        workflow. Builders that emit aggregate outputs should override
+        ``write_documents()`` instead of replacing ``write()`` wholesale.
+        """
         entries = self._document_entries()
         for entry in entries:
             logger.info(
@@ -213,6 +215,11 @@ class DocxBuilder(Builder):
 
     def finish(self) -> None:
         pass
+
+
+def _root_doc(config) -> str:
+    """Return Sphinx's root document config value across naming eras."""
+    return getattr(config, 'root_doc', None) or config.master_doc
 
 
 def _toctree_only_shell(master_tree: nodes.document) -> nodes.document:

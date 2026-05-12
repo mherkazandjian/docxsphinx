@@ -230,7 +230,7 @@ All development and testing runs inside a Docker container — the host
 only needs Docker and `make`:
 
 ```
-make build              # docker compose build (python:3.12-slim by default)
+make build              # docker compose build (python:3.14-slim by default)
 make test               # full pytest suite in the container
 make lint               # ruff check src tests
 make shell              # interactive bash in the container
@@ -249,8 +249,8 @@ make test LOCAL=1
 Override the Python version:
 
 ```
-PYTHON_VERSION=3.11 make build
-PYTHON_VERSION=3.11 make test
+PYTHON_VERSION=3.13 make build
+PYTHON_VERSION=3.13 make test
 ```
 
 ### Test pyramid

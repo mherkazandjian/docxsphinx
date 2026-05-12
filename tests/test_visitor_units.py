@@ -1314,8 +1314,8 @@ def test_document_entries_back_compat_synthesises_single_output(
 ) -> None:
     """When ``docx_documents`` is empty (the common back-compat case),
     ``_document_entries`` yields exactly one entry derived from
-    ``master_doc`` + ``project`` + ``version`` — reproducing pre-2.1
-    single-output behaviour."""
+    Sphinx's root document + ``project`` + ``version`` — reproducing
+    pre-2.1 single-output behaviour."""
     from docxsphinx.builder import DocxBuilder, DocxDocumentEntry
 
     # Minimal builder-like object exposing the config fields
@@ -1330,6 +1330,24 @@ def test_document_entries_back_compat_synthesises_single_output(
     )
     entries = DocxBuilder._document_entries(builder)
     assert entries == [DocxDocumentEntry('index', 'my_proj-0.2', None, False)]
+
+
+def test_document_entries_prefers_sphinx_root_doc_name() -> None:
+    """Sphinx 9's primary root-document name is ``root_doc``; keep
+    ``master_doc`` as a fallback for older configs and tests."""
+    from docxsphinx.builder import DocxBuilder, DocxDocumentEntry
+
+    builder = SimpleNamespace(
+        config=SimpleNamespace(
+            docx_documents=[],
+            project='my_proj',
+            version='0.2',
+            root_doc='root-index',
+            master_doc='legacy-index',
+        ),
+    )
+    entries = DocxBuilder._document_entries(builder)
+    assert entries == [DocxDocumentEntry('root-index', 'my_proj-0.2', None, False)]
 
 
 def test_document_entries_passes_through_configured_list(
