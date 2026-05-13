@@ -12,7 +12,7 @@ authors = [
     { name = "Mher Kazandjian", email = "mherkazandjian@gmail.com" },
     { name = "Hugo Buddelmeijer", email = "hugo@buddelmeijer.nl" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 keywords = ["sphinx", "extension", "builder", "docx", "openxml", "word"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -22,18 +22,17 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Documentation :: Sphinx",
     "Topic :: Office/Business :: Office Suites",
     "Topic :: Software Development :: Documentation",
     "Topic :: Text Processing :: Markup",
 ]
 dependencies = [
-    "docutils>=0.17",
-    "Sphinx>=3.5",
+    "docutils>=0.21",
+    "Sphinx>=9.1,<10",
     "python-docx>=1.0.0",
     "Pygments>=2.14",
 ]
@@ -52,7 +51,7 @@ dev = [
     "tox>=4",
     "build>=1.0",
     "twine>=4.0",
-    "myst-parser>=3.0",
+    "myst-parser>=5.0",
 ]
 
 [project.urls]

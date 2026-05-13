@@ -1,7 +1,7 @@
 ## Makefile — docker-first dev workflow for docxsphinx.
 ##
 ## Usage:
-##   make build                 build the dev image (python:3.12 by default)
+##   make build                 build the dev image (python:3.14 by default)
 ##   make shell                 interactive shell inside the container
 ##   make test                  run pytest in the container
 ##   make lint                  run ruff in the container
@@ -15,14 +15,14 @@
 ##   make test LOCAL=1
 ##
 ## Python version override:
-##   PYTHON_VERSION=3.11 make build
+##   PYTHON_VERSION=3.13 make build
 ##
 ## UID/GID of the container dev user default to the host's so that files
 ## written via the bind-mount stay owned by you on the host.
 
 export UID              ?= $(shell id -u)
 export GID              ?= $(shell id -g)
-export PYTHON_VERSION   ?= 3.12
+export PYTHON_VERSION   ?= 3.14
 
 COMPOSE ?= docker compose
 RUN     ?= $(COMPOSE) run --rm dev

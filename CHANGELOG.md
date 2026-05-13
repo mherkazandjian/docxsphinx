@@ -7,6 +7,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated the supported toolchain to Sphinx 9.1 on Python 3.12+.
+  Runtime metadata now requires `Sphinx>=9.1,<10` and `docutils>=0.21`;
+  development extras use `myst-parser>=5.0` for Sphinx 9 / Python 3.14
+  compatibility.
+- Updated local, Docker, CI, and release defaults to Python 3.14.
+
 ## [2.1.0] — 2026-04-23
 
 Adds a reverse pipeline (`.docx` → Markdown / RST), LaTeX math

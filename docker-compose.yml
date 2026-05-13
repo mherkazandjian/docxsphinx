@@ -3,10 +3,10 @@ services:
     build:
       context: .
       args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.14}
         UID: ${UID:-1000}
         GID: ${GID:-1000}
-    image: docxsphinx-dev:py${PYTHON_VERSION:-3.12}
+    image: docxsphinx-dev:py${PYTHON_VERSION:-3.14}
     working_dir: /workspace
     volumes:
       - .:/workspace

@@ -115,3 +115,4 @@ ENV/
 examples/corpus/*
 !examples/corpus/README.md
 
+.DS_Store
