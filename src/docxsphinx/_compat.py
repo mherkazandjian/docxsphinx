@@ -73,7 +73,7 @@ except ImportError:  # pragma: no cover - defensive
 try:
     from docx.table import _Cell  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover - defensive
-    class _Cell:  # noqa: N801  (preserve upstream name)
+    class _Cell:
         """Fallback stub; isinstance(obj, _Cell) is always False."""
 
 
@@ -101,8 +101,8 @@ except ImportError:  # pragma: no cover - defensive
 
 __all__ = [
     "DOCX_IMAGE_ERRORS",
-    "__",
     "_Cell",
+    "__",
     "bold",
     "brown",
     "darkgreen",

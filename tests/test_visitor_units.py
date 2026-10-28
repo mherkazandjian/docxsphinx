@@ -108,8 +108,14 @@ def test_mixed_nesting_picks_style_by_innermost_list(
     assert any('List Bullet 2' in s for s in list_styles), list_styles
 
 
-def _build_tasklist_doctree(checked: bool, task_text: str) -> nodes.document:
-    """Hand-build the shape of doctree MyST emits for a single GFM task item."""
+def _build_tasklist_doctree(
+    checked: bool, task_text: str, leading_space: bool = True,
+) -> nodes.document:
+    """Hand-build the shape of doctree MyST emits for a single GFM task item.
+
+    ``leading_space`` mirrors the text node after the checkbox: myst-parser
+    < 5.1 starts it with a space, 5.1+ doesn't.
+    """
     doctree = _blank_document()
     blist = nodes.bullet_list(bullet='-', classes=['contains-task-list'])
     item = nodes.list_item(classes=['task-list-item'])
@@ -122,7 +128,7 @@ def _build_tasklist_doctree(checked: bool, task_text: str) -> nodes.document:
              'disabled="disabled" type="checkbox">'
     )
     para += nodes.raw('', html, format='html')
-    para += nodes.Text(f' {task_text}')
+    para += nodes.Text(f' {task_text}' if leading_space else task_text)
     item += para
     blist += item
     doctree += blist
@@ -152,6 +158,22 @@ def test_tasklist_checked_renders_boxed_x(fake_builder: SimpleNamespace) -> None
     list_items = [p for p in doc.paragraphs if 'List' in (p.style.name or '')]
     assert list_items, [p.text for p in doc.paragraphs]
     assert list_items[0].text == '☒ make coffee', list_items[0].text
+
+
+@pytest.mark.parametrize('leading_space', [True, False], ids=['myst<5.1', 'myst>=5.1'])
+@pytest.mark.parametrize(('checked', 'glyph'), [(False, '☐'), (True, '☒')])
+def test_tasklist_glyph_followed_by_exactly_one_space(
+    fake_builder: SimpleNamespace, checked: bool, glyph: str, leading_space: bool,
+) -> None:
+    """The item reads "<glyph> <text>" whether or not MyST leaves a space
+    after the checkbox raw node."""
+    doctree = _build_tasklist_doctree(
+        checked=checked, task_text='ship it', leading_space=leading_space,
+    )
+    doc = _walk_doctree(doctree, fake_builder)
+    list_items = [p for p in doc.paragraphs if 'List' in (p.style.name or '')]
+    assert list_items, [p.text for p in doc.paragraphs]
+    assert list_items[0].text == f'{glyph} ship it', list_items[0].text
 
 
 def test_tasklist_prefix_does_not_leak_to_following_plain_item(
@@ -308,7 +330,7 @@ def test_image_with_width_sets_inline_shape_width(
     ), [(p.text, p.alignment) for p in picture_paragraphs]
 
     # Alt text propagates to the wp:docPr element.
-    doc_pr = shape._inline.docPr  # noqa: SLF001
+    doc_pr = shape._inline.docPr
     assert doc_pr.get('descr') == 'sample alt'
     assert doc_pr.get('title') == 'sample alt'
 
