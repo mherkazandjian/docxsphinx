@@ -77,7 +77,30 @@ except ImportError:  # pragma: no cover - defensive
         """Fallback stub; isinstance(obj, _Cell) is always False."""
 
 
+# ---------------------------------------------------------------------------
+# python-docx image-parsing exceptions. ``run.add_picture`` raises these
+# (plain ``Exception`` subclasses, not OSError / ValueError) for formats it
+# can't read — SVG, WebP, truncated files. Catching them keeps one bad image
+# from aborting the whole build. If the module moves, fall back to an empty
+# tuple so ``except DOCX_IMAGE_ERRORS`` simply matches nothing.
+# ---------------------------------------------------------------------------
+try:
+    from docx.image.exceptions import (
+        InvalidImageStreamError,
+        UnexpectedEndOfFileError,
+        UnrecognizedImageError,
+    )
+    DOCX_IMAGE_ERRORS: tuple[type[Exception], ...] = (
+        InvalidImageStreamError,
+        UnexpectedEndOfFileError,
+        UnrecognizedImageError,
+    )
+except ImportError:  # pragma: no cover - defensive
+    DOCX_IMAGE_ERRORS = ()
+
+
 __all__ = [
+    "DOCX_IMAGE_ERRORS",
     "__",
     "_Cell",
     "bold",

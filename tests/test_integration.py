@@ -564,3 +564,116 @@ def test_rst_and_md_produce_same_paragraph_count_for_equivalent_source(
         [p.text for p in rst_doc.paragraphs],
         [p.text for p in md_doc.paragraphs],
     )
+
+
+# ---------------------------------------------------------------------------
+# Constructs that 2.1 dropped silently (content and all)
+# ---------------------------------------------------------------------------
+
+_FORMERLY_DROPPED_RST = """
+Title
+=====
+
+.. contents::
+
+Body
+----
+
+.. topic:: Topic title
+
+   topicMARK body.
+
+.. sidebar:: Sidebar title
+
+   sidebarMARK body.
+
+.. rubric:: rubricMARK heading
+
+| lineblockMARK first line with **bold**
+| second line
+|     nested line
+
+>>> doctestMARK = 1
+
+.. container:: custom
+
+   containerMARK paragraph.
+
+Lead-in paragraph.
+
+    quoteMARK text.
+
+    -- attributionMARK Author
+
+.. figure:: missing.png
+
+   Caption.
+
+   legendMARK paragraph.
+"""
+
+
+@pytest.mark.parametrize(
+    'marker',
+    ['topic', 'sidebar', 'rubric', 'lineblock', 'doctest', 'container',
+     'quote', 'attribution', 'legend'],
+)
+def test_rst_formerly_dropped_construct_reaches_document(
+    translator_factory: Callable[[str, str], DocumentType], marker: str,
+) -> None:
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    assert f'{marker}MARK' in doc.element.xml
+
+
+def test_rst_rubric_is_bold_paragraph_not_heading(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    para = next(p for p in doc.paragraphs if 'rubricMARK' in p.text)
+    assert not para.style.name.startswith('Heading'), para.style.name
+    assert all(r.bold for r in para.runs if r.text.strip())
+
+
+def test_rst_line_block_is_one_paragraph_with_breaks(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    para = next(p for p in doc.paragraphs if 'lineblockMARK' in p.text)
+    lines = para.text.split('\n')
+    assert lines[0] == 'lineblockMARK first line with bold'
+    assert lines[1] == 'second line'
+    assert lines[2] == ' ' * 4 + 'nested line'   # nested block → indented
+    assert [r.text for r in para.runs if r.bold] == ['bold']
+
+
+def test_rst_doctest_block_renders_as_monospace_code(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    para = next(p for p in doc.paragraphs if 'doctestMARK' in p.text)
+    assert para.text.startswith('>>> doctestMARK = 1')
+    assert {r.font.name for r in para.runs if r.text.strip()} == {'Consolas'}
+
+
+def test_rst_attribution_is_dash_prefixed_paragraph(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    assert '— attributionMARK Author' in [p.text for p in doc.paragraphs]
+
+
+def test_rst_contents_links_resolve_to_section_bookmarks(
+    translator_factory: Callable[[str, str], DocumentType],
+) -> None:
+    """``.. contents::`` renders as a boxed list of internal links; every
+    link must target a bookmark the writer emitted for a section."""
+    import re
+
+    doc = translator_factory(_FORMERLY_DROPPED_RST, 'rst')
+    xml = doc.element.xml
+    anchors = set(re.findall(r'w:anchor="([^"]+)"', xml))
+    bookmarks = set(re.findall(r'w:bookmarkStart w:id="\d+" w:name="([^"]+)"', xml))
+    assert anchors, 'contents produced no internal links'
+    assert anchors <= bookmarks, anchors - bookmarks
+    labels = [t.rows[0].cells[0].paragraphs[0].text for t in doc.tables]
+    assert 'Contents' in labels, labels

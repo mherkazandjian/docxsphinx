@@ -7,6 +7,54 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- **An SVG (or other unsupported) image no longer aborts the build.**
+  python-docx raises `UnrecognizedImageError` — not `OSError` /
+  `ValueError` — for SVG, WebP and truncated files, so a single such
+  image stopped `sphinx-build` with exit code 2. The image is now
+  skipped with a located warning (`docx.image`) that says to convert it
+  to PNG / JPEG / GIF / BMP / TIFF.
+- **autodoc parameter names reappear.** The name in a `:param x:` field
+  is a Sphinx `literal_strong` node, which had no visitor and was
+  dropped; it now renders bold.
+
+### Changed
+
+- **Constructs that were dropped silently now render.** Each of these
+  used to be `SkipNode`-ed, content and all, without a warning:
+  - `.. topic::`, `.. sidebar::` (title plus italic subtitle),
+    `.. contents::` and `.. todo::` (with `todo_include_todos = True`)
+    → a 1×1 box with a bold title, like an admonition. `contents`
+    entries link to the section bookmarks.
+  - Line blocks (`| …`) → one paragraph with a line break per line;
+    nested blocks are indented.
+  - Bare doctest blocks (`>>> …`) → a code block highlighted as `pycon`.
+  - `.. rubric::` → a bold paragraph.
+  - `versionadded` / `versionchanged` / `deprecated` → their body,
+    starting with Sphinx's "Added in version X:" label.
+  - `.. container::` and figure legends → their content, in place. This
+    also brings back every `code-block` with a `:caption:` (Sphinx wraps
+    those in a container); the caption renders as a plain `Caption`
+    paragraph, bookmarked so `:ref:` to the block resolves.
+  - Block-quote attributions → a paragraph starting with "— ".
+  - `.. productionlist::` → a monospace paragraph, one line per
+    production, with bookmarks so `:token:` references resolve.
+  - `.. acks::` → its bullet list.
+
+  New `examples/sample_directives/` exercises every one of them.
+- **Unknown node types warn and keep their text.** A node type with no
+  docx renderer — typically from another extension — used to vanish
+  without a message. The builder now logs one warning per node type per
+  build (`docxsphinx has no renderer for 'x' nodes; including their text
+  without formatting [docx.unknown_node]`) and renders the node's
+  children as plain content.
+- Both new warnings go through Sphinx's logger, so builds run with `-W`
+  now **fail** on an unknown node type or an unsupported image until the
+  source is changed or the warning is silenced with
+  `suppress_warnings = ['docx.unknown_node', 'docx.image']` (or
+  `['docx']` for all of them).
+
 ## [2.1.0] — 2026-04-23
 
 Adds a reverse pipeline (`.docx` → Markdown / RST), LaTeX math

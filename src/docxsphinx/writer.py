@@ -21,8 +21,9 @@ from pygments import lex
 from pygments.lexers import TextLexer, get_lexer_by_name
 from pygments.token import Token
 from pygments.util import ClassNotFound
+from sphinx.util import logging as sphinx_logging
 
-from docxsphinx._compat import _Cell
+from docxsphinx._compat import DOCX_IMAGE_ERRORS, _Cell
 from docxsphinx._docx_helpers import (
     add_bookmark,
     add_footnote,
@@ -35,6 +36,12 @@ from docxsphinx._docx_helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Warnings the user should act on go through Sphinx's logger so they show in
+# sphinx-build output with a source location, count towards ``-W`` and honour
+# ``suppress_warnings`` (``type='docx'``). ``logger`` above stays the target of
+# ``dprint`` / ``docx_debug_log``, which hooks the stdlib ``docxsphinx.writer``.
+sphinx_logger = sphinx_logging.getLogger(__name__)
 
 
 BALLOT_BOX = '☐'           # ☐ empty
@@ -275,6 +282,12 @@ ADMONITION_LABELS = {
     'tip':       'Tip',
     'warning':   'Warning',
     'seealso':   'See also',
+    # Boxes whose heading normally comes from a ``title`` child; these are
+    # the fallbacks when it's absent (e.g. a title-less admonition).
+    'admonition': 'Note',
+    'topic':     'Topic',
+    'sidebar':   'Sidebar',
+    'todo_node': 'Todo',
 }
 
 
@@ -476,11 +489,18 @@ class DocxTranslator(nodes.NodeVisitor):
         self._footnotes_root = None
         "Lazy handle to <w:footnotes> in footnotes.xml; created on first use."
 
+        self._line_block_lines = 0
+        "Lines emitted so far in the current top-level line block; every line but the first starts with a ``w:br``."
+
     def add_text(self, text):
         dprint()
         if self._pending_text_prefix is not None:
             text = self._pending_text_prefix + text
             self._pending_text_prefix = None
+        if self.current_paragraph is None:
+            # Text reached before any block opened a paragraph — e.g. the
+            # children of an unknown node that unknown_visit descends into.
+            self.current_paragraph = self.current_state.location.add_paragraph()
         textrun = self.current_paragraph.add_run(text)
         if self.strong:
             textrun.bold = True
@@ -501,6 +521,13 @@ class DocxTranslator(nodes.NodeVisitor):
     def end_state(self, first=None):
         dprint()
         self.current_state = self.old_states.pop()
+
+    def _visit_passthrough(self, node):
+        """No output of its own; the children render at the current location."""
+        dprint()
+
+    def _depart_passthrough(self, node):
+        dprint()
 
     def visit_start_of_file(self, node):
         dprint()
@@ -534,26 +561,19 @@ class DocxTranslator(nodes.NodeVisitor):
         if self.sectionlevel > 0:
             self.sectionlevel -= 1
 
-    def visit_topic(self, node):
-        dprint()
-        raise nodes.SkipNode
-
-    def depart_topic(self, node):
-        dprint()
-        raise nodes.SkipNode
-
-    visit_sidebar = visit_topic
-    depart_sidebar = depart_topic
+    # ``topic`` / ``sidebar`` (incl. ``.. contents::``) render as admonition
+    # boxes — see the aliases next to ``_visit_admonition``.
 
     def visit_rubric(self, node):
+        """A rubric is an informal heading outside the section structure, so
+        it becomes a bold paragraph rather than a Word heading."""
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('-[ ')
+        self.visit_paragraph(node)
+        self.strong = True
 
     def depart_rubric(self, node):
         dprint()
-        raise nodes.SkipNode
-        # self.add_text(' ]-')
+        self.strong = False
 
     def visit_compound(self, node):
         dprint()
@@ -602,9 +622,11 @@ class DocxTranslator(nodes.NodeVisitor):
         pass
 
     def visit_attribution(self, node):
+        """Block-quote attribution (``-- Author``): its own paragraph,
+        prefixed with an em dash."""
         dprint()
-        raise nodes.SkipNode
-        # self.add_text('-- ')
+        self.visit_paragraph(node)
+        self.add_text('— ')
 
     def depart_attribution(self, node):
         dprint()
@@ -723,6 +745,32 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_desc_content(self, node):
         dprint()
 
+    # Signature fragments from the C / C++ / JS domains and Sphinx's
+    # multi-line signatures. Their text *is* the signature, so walk them like
+    # ``inline``; the Python domain's own nodes are handled above.
+    visit_desc_signature_line = _visit_passthrough
+    depart_desc_signature_line = _depart_passthrough
+    visit_desc_inline = _visit_passthrough
+    depart_desc_inline = _depart_passthrough
+    visit_desc_sig_space = _visit_passthrough
+    depart_desc_sig_space = _depart_passthrough
+    visit_desc_sig_name = _visit_passthrough
+    depart_desc_sig_name = _depart_passthrough
+    visit_desc_sig_operator = _visit_passthrough
+    depart_desc_sig_operator = _depart_passthrough
+    visit_desc_sig_punctuation = _visit_passthrough
+    depart_desc_sig_punctuation = _depart_passthrough
+    visit_desc_sig_keyword = _visit_passthrough
+    depart_desc_sig_keyword = _depart_passthrough
+    visit_desc_sig_keyword_type = _visit_passthrough
+    depart_desc_sig_keyword_type = _depart_passthrough
+    visit_desc_sig_literal_number = _visit_passthrough
+    depart_desc_sig_literal_number = _depart_passthrough
+    visit_desc_sig_literal_string = _visit_passthrough
+    depart_desc_sig_literal_string = _depart_passthrough
+    visit_desc_sig_literal_char = _visit_passthrough
+    depart_desc_sig_literal_char = _depart_passthrough
+
     def visit_figure(self, node):
         """Record a figure number for the `ids` on this node so :numref:
         resolution (handled by Sphinx's env before we see the tree) can find
@@ -749,35 +797,42 @@ class DocxTranslator(nodes.NodeVisitor):
             style = None
 
         para = self.current_state.location.add_paragraph(style=style)
-        para.add_run('Figure ').bold = True
-        add_seq_field(para, 'Figure', initial_value=self._figure_counter)
-        para.add_run('. ').bold = True
-
         parent = node.parent
         if isinstance(parent, nodes.figure):
-            for fid in parent.get('ids', []):
-                self._emit_bookmark(para, fid)
+            para.add_run('Figure ').bold = True
+            add_seq_field(para, 'Figure', initial_value=self._figure_counter)
+            para.add_run('. ').bold = True
+        # Bookmark the owner's ids — the figure, or the ``literal-block-wrapper``
+        # container of a ``code-block`` with ``:caption:`` (which gets the
+        # plain caption, no "Figure N." prefix) — so references land here.
+        for anchor in parent.get('ids', []):
+            self._emit_bookmark(para, anchor)
 
         self.current_paragraph = para
 
     def depart_caption(self, node):
         dprint()
 
+    # The paragraphs after a figure's caption render as normal body text.
+    visit_legend = _visit_passthrough
+    depart_legend = _depart_passthrough
+
     def visit_productionlist(self, node):
+        """Grammar (``.. productionlist::``): one monospace paragraph, one line
+        per production. Sphinx already pads ``name ::= rule`` in the text.
+        Token ids are bookmarked so ``:token:`` references resolve."""
         dprint()
+        self.visit_paragraph(node)
+        para = self.current_paragraph
+        productions = [c for c in node.children if getattr(c, 'tagname', None) == 'production']
+        for i, production in enumerate(productions):
+            if i:
+                para.add_run().add_break()
+            for element in production.findall(nodes.Element):
+                for anchor in element.get('ids', []):
+                    self._emit_bookmark(para, anchor)
+            para.add_run(production.astext().rstrip('\n')).font.name = CODE_FONT_NAME
         raise nodes.SkipNode
-        # names = []
-        # for production in node:
-        #     names.append(production['tokenname'])
-        # maxlen = max(len(name) for name in names)
-        # for production in node:
-        #     if production['tokenname']:
-        #         self.add_text(production['tokenname'].ljust(maxlen) + ' ::=')
-        #         lastname = production['tokenname']
-        #     else:
-        #         self.add_text('%s    ' % (' '*len(lastname)))
-        #     self.add_text(production.astext() + '\n')
-        # raise nodes.SkipNode
 
     def visit_seealso(self, node):
         dprint()
@@ -1074,11 +1129,9 @@ class DocxTranslator(nodes.NodeVisitor):
         # TODO: Figure out some better solution.
         self.current_state.location.add_paragraph("")
 
-    def visit_acks(self, node):
-        dprint()
-        raise nodes.SkipNode
-        # self.add_text(', '.join(n.astext() for n in node.children[0].children)
-        #               + '.')
+    # ``.. acks::`` wraps an ordinary bullet list — render it as one.
+    visit_acks = _visit_passthrough
+    depart_acks = _depart_passthrough
 
     def visit_image(self, node):
         dprint()
@@ -1123,6 +1176,19 @@ class DocxTranslator(nodes.NodeVisitor):
             shape = run.add_picture(str(file_path), width=width, height=height)
         except (OSError, ValueError) as exc:
             logger.warning('failed to embed image %s: %s', file_path, exc)
+            return
+        except DOCX_IMAGE_ERRORS as exc:
+            # python-docx can't parse the format. These exceptions aren't
+            # OSError / ValueError, so they used to escape and abort the build.
+            if file_path.suffix.lower() == '.svg':
+                hint = 'python-docx cannot embed SVG; convert it to PNG'
+            else:
+                hint = ('python-docx can only embed PNG, JPEG, GIF, BMP and TIFF; '
+                        'convert it to one of those')
+            sphinx_logger.warning(
+                'image %s skipped: %s (%s)', uri, hint, type(exc).__name__,
+                location=node, type='docx', subtype='image',
+            )
             return
 
         # :align: center|left|right — only meaningful on block-level images.
@@ -1348,16 +1414,20 @@ class DocxTranslator(nodes.NodeVisitor):
         # Determine the label:
         #  - specialised admonition (note/warning/tip/…) → map tagname to a
         #    canonical label from ADMONITION_LABELS.
-        #  - generic `.. admonition:: Custom Heading` → pull the user's text
-        #    out of the first-child title and remove it so visit_title doesn't
-        #    render it a second time.
-        if node.tagname == 'admonition':
-            label = 'Note'
-            if node.children and isinstance(node.children[0], nodes.title):
-                label = node.children[0].astext()
-                node.remove(node.children[0])
-        else:
-            label = ADMONITION_LABELS.get(node.tagname, node.tagname.title())
+        #  - boxes carrying their own heading (generic `.. admonition:: X`,
+        #    topic / contents, sidebar, todo) → pull the text out of the
+        #    first-child title and remove it so visit_title doesn't render it
+        #    a second time as a Word heading. A sidebar's subtitle follows.
+        label = ADMONITION_LABELS.get(node.tagname, node.tagname.title())
+        if node.tagname == 'topic' and 'contents' in node.get('classes', []):
+            label = 'Contents'  # `.. contents:: :local:` has no title child
+        if node.children and isinstance(node.children[0], nodes.title):
+            label = node.children[0].astext()
+            node.remove(node.children[0])
+        subtitle = None
+        if node.children and isinstance(node.children[0], nodes.subtitle):
+            subtitle = node.children[0].astext()
+            node.remove(node.children[0])
 
         # Enter the cell as the current location, then emit the bold title
         # into the auto-created empty paragraph that python-docx adds to any
@@ -1366,6 +1436,9 @@ class DocxTranslator(nodes.NodeVisitor):
         title_para = cell.paragraphs[0]
         title_para.add_run(label).bold = True
         self.current_paragraph = title_para
+        if subtitle:
+            self.current_paragraph = cell.add_paragraph()
+            self.current_paragraph.add_run(subtitle).italic = True
 
     def _depart_admonition(self, node):
         dprint()
@@ -1391,21 +1464,23 @@ class DocxTranslator(nodes.NodeVisitor):
     depart_tip = _depart_admonition
     visit_warning = _visit_admonition
     depart_warning = _depart_admonition
+    visit_topic = _visit_admonition       # incl. `.. contents::`
+    depart_topic = _depart_admonition
+    visit_sidebar = _visit_admonition
+    depart_sidebar = _depart_admonition
+    visit_todo_node = _visit_admonition   # sphinx.ext.todo
+    depart_todo_node = _depart_admonition
 
-    def visit_versionmodified(self, node):
-        dprint()
-        raise nodes.SkipNode
-        # from sphinx.locale import admonitionlabels, versionlabels, _
-        # if node.children:
-        #     self.add_text(
-        #             versionlabels[node['type']] % node['version'] + ': ')
-        # else:
-        #     self.add_text(
-        #             versionlabels[node['type']] % node['version'] + '.')
+    # versionadded / versionchanged / deprecated: Sphinx already puts the
+    # "Added in version X:" label in the first paragraph as an ``inline``,
+    # so the body renders as-is.
+    visit_versionmodified = _visit_passthrough
+    depart_versionmodified = _depart_passthrough
 
-    def depart_versionmodified(self, node):
-        dprint()
-        raise nodes.SkipNode
+    # ``.. container::`` (and the wrapper Sphinx puts around a captioned
+    # ``code-block``) has no look of its own; its children render in place.
+    visit_container = _visit_passthrough
+    depart_container = _depart_passthrough
 
     def visit_literal_block(self, node):
         """Render a fenced code block as a single paragraph with one run per
@@ -1415,7 +1490,13 @@ class DocxTranslator(nodes.NodeVisitor):
         background, default font) follows the user's template."""
         dprint()
         self.in_literal_block = True
+        # SkipNode keeps visit_Text from appending the raw source again.
+        self._add_code_paragraph(node.astext(), _code_language(node))
+        raise nodes.SkipNode
 
+    def _add_code_paragraph(self, source: str, language: str | None) -> None:
+        """New ``Preformatted Text`` paragraph holding ``source`` as
+        Pygments-coloured runs."""
         style = 'Preformatted Text'
         try:
             self.docx_container.styles.get_style_id(style, WD_STYLE_TYPE.PARAGRAPH)
@@ -1425,39 +1506,50 @@ class DocxTranslator(nodes.NodeVisitor):
 
         self.current_paragraph = self.current_state.location.add_paragraph(style=style)
         self.current_paragraph.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-        # Tokenize + emit coloured runs. SkipNode prevents visit_Text from
-        # appending the raw source again.
-        _emit_highlighted(self.current_paragraph, node.astext(), _code_language(node))
-        raise nodes.SkipNode
+        _emit_highlighted(self.current_paragraph, source, language)
 
     def depart_literal_block(self, node):
         dprint()
         self.in_literal_block = False
 
     def visit_doctest_block(self, node):
+        """A bare ``>>>`` paragraph: render like a code block, lexed as a
+        Python console session."""
         dprint()
+        self._add_code_paragraph(node.astext(), 'pycon')
         raise nodes.SkipNode
 
     def depart_doctest_block(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_line_block(self, node):
+        """``| line`` blocks: one paragraph per top-level block, a ``w:br``
+        between lines. Nested blocks continue the same paragraph; visit_line
+        indents their lines."""
         dprint()
-        raise nodes.SkipNode
+        if isinstance(node.parent, nodes.line_block):
+            return
+        self.visit_paragraph(node)
+        self._line_block_lines = 0
 
     def depart_line_block(self, node):
         dprint()
-        raise nodes.SkipNode
 
     def visit_line(self, node):
         dprint()
-        pass
+        if self._line_block_lines:
+            self.current_paragraph.add_run().add_break()
+        self._line_block_lines += 1
+        depth = 0
+        parent = node.parent
+        while isinstance(parent.parent, nodes.line_block):
+            depth += 1
+            parent = parent.parent
+        if depth:
+            self.current_paragraph.add_run(' ' * 4 * depth)
 
     def depart_line(self, node):
         dprint()
-        pass
 
     def visit_block_quote(self, node):
         dprint()
@@ -1591,6 +1683,20 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_literal_emphasis(self, node):
         dprint()
         # self.add_text('*')
+
+    def visit_literal_strong(self, node):
+        """Sphinx's bold literal — e.g. the parameter name in an autodoc
+        ``:param x:`` field."""
+        dprint()
+        self.strong = True
+
+    def depart_literal_strong(self, node):
+        dprint()
+        self.strong = False
+
+    # ``:manpage:`` role — plain text.
+    visit_manpage = _visit_passthrough
+    depart_manpage = _depart_passthrough
 
     def visit_strong(self, node):
         dprint()
@@ -1805,11 +1911,32 @@ class DocxTranslator(nodes.NodeVisitor):
         #     self.body.append(node.astext())
 
     def unknown_visit(self, node):
+        """A node type with no visitor, typically from another extension.
+
+        Warn once per node type, then walk the children so their text still
+        reaches the document — unformatted, but not lost. A block-level text
+        element gets its own paragraph so its text doesn't run on into the
+        previous one.
+        """
         dprint()
-        raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)
+        # Remembered on the builder, which lives for one sphinx-build run;
+        # each docx_documents output gets a fresh translator.
+        warned = getattr(self.builder, '_docx_unknown_warned', None)
+        if warned is None:
+            warned = set()
+            self.builder._docx_unknown_warned = warned
+        if node.tagname not in warned:
+            warned.add(node.tagname)
+            # Extension nodes often carry no line number; point at the first
+            # descendant that does so the warning names the source line.
+            location = next((n for n in node.findall(nodes.Element) if n.line), node)
+            sphinx_logger.warning(
+                'docxsphinx has no renderer for %r nodes; including their text '
+                'without formatting', node.tagname,
+                location=location, type='docx', subtype='unknown_node',
+            )
+        if isinstance(node, nodes.TextElement) and not isinstance(node, nodes.Inline):
+            self.visit_paragraph(node)
 
     def unknown_departure(self, node):
         dprint()
-        raise nodes.SkipNode
-        # raise NotImplementedError('Unknown node: ' + node.__class__.__name__)

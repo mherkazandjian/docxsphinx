@@ -47,8 +47,17 @@ everything.
 - Node type `foo` dispatches to `visit_foo` / `depart_foo`. A visitor does one of three things:
   renders output; passes through (no output of its own, children still visited); or
   `raise nodes.SkipNode`, which **drops the node and its children**.
-- `unknown_visit` also raises SkipNode, **without a warning**. Any node type that has no visitor
-  vanishes, and that is behind most "content missing" reports.
+- A node type with no visitor hits `unknown_visit`. It logs one `docx.unknown_node` warning per
+  node type per build (the set is stored on the builder), then **descends** so the text
+  survives, unformatted. A block-level `TextElement` gets its own paragraph first. If
+  descending a node is wrong (duplicate text, non-content), give it an explicit visitor
+  rather than changing the default.
+- Never raise SkipNode from a `depart_*`. Docutils only catches it around the visit, so once
+  that node is walked a SkipNode from depart propagates out of `walkabout`.
+- Two loggers: `logger` (stdlib `docxsphinx.writer`) is what `dprint` and `docx_debug_log`
+  use, and its warnings bypass `-W` / `suppress_warnings`. `sphinx_logger`
+  (`sphinx.util.logging`) is for warnings the user must act on: pass `location=node,
+  type='docx', subtype=…`.
 - Where output goes is a stack. `self.current_state` is a `DocxState` whose `.location` is the
   Document or a table `_Cell`. `new_state(cell)` pushes and `end_state()` pops
   (`self.old_states`). Tables, admonitions, definition / field / option lists push a cell state
@@ -68,8 +77,12 @@ everything.
 - Style lookups follow one pattern: `styles.get_style_id(name, WD_STYLE_TYPE.X)`, and on
   `KeyError` call `logger.warning` and use `None`. User templates may lack any style; never let
   that fail the build.
-- Aliases are fine: `visit_number_reference = visit_reference`, and every admonition maps to
-  `_visit_admonition`.
+- Aliases are fine: `visit_number_reference = visit_reference`; every admonition, plus `topic`
+  / `sidebar` / `todo_node`, maps to `_visit_admonition`, which turns a leading `title` child
+  into the bold label and removes it so `visit_title` doesn't emit a Word heading; nodes with
+  no look of their own (`container`, `legend`, `versionmodified`, `acks`, `desc_sig_*`) map to
+  `_visit_passthrough`. Reuse `self.visit_paragraph(node)` to open a block paragraph with the
+  usual list / table-cell reuse rules.
 
 ## Dev loop (Docker-first)
 
@@ -108,6 +121,7 @@ skip.
 | `unit` / `integration` / `e2e` | `test_reverse.py` | pandoc engine, with `subprocess.run` / `shutil.which` patched for unit; real pandoc otherwise |
 | `integration` | `test_integration.py` | Real RST or MyST parsed through the `translator_factory(src, 'rst' or 'md')` fixture; catches parser-to-writer seam bugs |
 | `e2e` | `test_build_examples.py` | A `sphinx-build` subprocess for every entry in `EXAMPLES`; exit code + zip validity |
+| `e2e` | `test_dropped_content.py` | Every `…MARK` word in `sample_directives` reaches the docx; SVG / unknown-node warnings and `suppress_warnings` on a throwaway project |
 | `golden` (+`e2e`) | `test_golden.py` | Rebuilds each example and diffs `tests/_fingerprint.py` output against `tests/golden/<example>.fp.txt` |
 
 A fingerprint is a text summary of a `.docx`: counts, style distribution, headings, table shapes,
@@ -129,7 +143,8 @@ file; diff those outputs to compare two builds by hand.
    those use `sphinx-build -b pseudoxml source build/pseudo` on an example.
 2. **Find the visitor:** `grep -n "def visit_<tagname>" src/docxsphinx/writer.py`. Often there's
    a SkipNode stub, sometimes with commented-out code from the upstream text builder that's
-   unrelated to Word. If there's no visitor at all, `unknown_visit` is eating the node.
+   unrelated to Word. If there's no visitor at all, `unknown_visit` is rendering its bare text
+   and the build log shows a `[docx.unknown_node]` warning for it.
 3. **Implement** it next to its siblings. Start each method with `dprint()`, as every existing
    visitor does.
    - Block output: `self.current_paragraph = self.current_state.location.add_paragraph(style=…)`.
@@ -168,17 +183,22 @@ file; diff those outputs to compare two builds by hand.
   per process.
 - Step through it: `python -m pdb $(which sphinx-build) -b docx source build`.
 
-## Known gaps (verified at 2.1, update this list as they close)
+## Known gaps (verified on main after 2.1.0, update this list as they close)
 
-- Dropped silently because they're SkipNode or have no visitor: `topic` (`.. contents::`),
-  `sidebar`, `container`, `rubric`, `line_block`, `doctest_block`, `versionmodified`,
-  `todo_node`, `legend`, `attribution`, `productionlist`, `acks`. A one-time warning in
-  `unknown_visit` would make these visible.
 - `visit_literal` does nothing, so inline code isn't monospace.
-- `visit_image` catches only `OSError` / `ValueError`. python-docx raises
-  `UnrecognizedImageError` (a plain `Exception`) for SVG / WebP, which aborts the whole build.
+- `visit_literal_block` sets `in_literal_block = True` and then raises SkipNode, so
+  `depart_literal_block` never resets it. After the first code block, `visit_Text` keeps
+  source newlines, and every wrapped paragraph gets hard `w:br` line breaks. Fixing it will
+  shift most goldens.
 - No visitor calls `dprint()` with arguments, so `docx_debug_log` produces an empty log, even
   though the README promises a trace of every visitor call.
+- Titles outside sections, admonitions and topics (e.g. a table title) still go through
+  `visit_title` and become Word headings.
+- `desc_type_parameter_list` / `desc_type_parameter` (PEP 695 `[T]`) have no visitor: they
+  warn and render as bare text.
+- Setting `supported_image_types` on the builder would let `sphinx.ext.imgconverter` turn SVG
+  into PNG, but it also switches on Sphinx's built-in `ImageDownloader` (remote images fetched
+  at build time) and `DataURIExtractor`. That's not done yet.
 - Image `:scale:` and `%` widths are ignored (they would need the intrinsic image size).
 - Definition-list terms are flattened with `astext()`, which loses inline formatting.
   Classifiers are dropped.

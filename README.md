@@ -34,7 +34,7 @@ release notes.
 | Definition / glossary lists | 2-column table, bold term + definition body |
 | Option lists (`-h, --help  description`) | 2-column table with canonical flag signature + description |
 | Tables, incl. column + row spans | Native Word tables with `w:gridSpan` + `w:vMerge` |
-| Images with `:width:` / `:height:` / `:align:` / `:alt:` | Inline shapes sized correctly in EMU, alt text propagated |
+| Images with `:width:` / `:height:` / `:align:` / `:alt:` | Inline shapes sized correctly in EMU, alt text propagated. SVG / WebP are skipped with a `docx.image` warning (convert them to PNG). |
 | Figures with captions | `Caption`-styled paragraph with auto-numbered `SEQ Figure` field |
 | Admonitions — `note` / `warning` / `tip` / `caution` / `error` / `danger` / `important` / `hint` / `attention` + generic | 1×1 wrapping table with bold title run + body |
 | External hyperlinks | `w:hyperlink` with `r:id` + inline formatting inside link text |
@@ -44,10 +44,14 @@ release notes.
 | Footnotes and citations with inline formatting | Word-native `word/footnotes.xml` part + superscripted references |
 | LaTeX math (`:math:`, `.. math::`, MyST `$…$` / `$$…$$`, AMS environments) | Native Office Math Markup Language (OMML) via pandoc; editable in Word's equation editor |
 | `sphinx.ext.autodoc` (`.. automodule::`, `.. autoclass::`, `.. autofunction::`) | Function / method / class signatures with bold names, parameter lists, optional-arg `[…]` brackets, return-type arrows; docstring `:param:` / `:returns:` / `:raises:` field lists as 2-column tables |
+| `.. topic::`, `.. sidebar::`, `.. contents::`, `.. todo::` | 1×1 box with a bold title, like admonitions; `contents` entries link to the sections |
+| Line blocks, bare `>>>` doctest blocks, `.. rubric::` | Line-broken paragraph / `pycon`-highlighted code block / bold paragraph |
+| `versionadded` / `versionchanged` / `deprecated`, `.. container::`, figure legends, captioned `code-block`s, block-quote attributions, `.. productionlist::` | Rendered in place: Sphinx's version label + body, the container's content, the legend paragraphs, a `Caption` paragraph above the code, "— Author", one monospace line per production |
+| Node types from other extensions that docxsphinx has no renderer for | Their text is kept, unformatted; one `docx.unknown_node` warning per node type |
 
 Features not yet implemented (tracked on the roadmap):
-versionadded/deprecated directives, Word-native TOC field, native
-form-field checkboxes, page headers/footers/breaks.
+Word-native TOC field, native form-field checkboxes, page
+headers/footers/breaks.
 
 ## Installation
 
@@ -197,7 +201,7 @@ Reports land in `examples/corpus/reports/` (gitignored).
 
 ## Examples
 
-Eighteen ready-to-build Sphinx projects live in [`examples/`](examples/):
+Twenty-one ready-to-build Sphinx projects live in [`examples/`](examples/):
 
 | RST | Markdown |
 |---|---|
@@ -210,6 +214,7 @@ Eighteen ready-to-build Sphinx projects live in [`examples/`](examples/):
 | `sample_autodoc` — `sphinx.ext.autodoc` against an in-repo Python module | `md_links` — external URLs and intra-doc anchors |
 | `sample_nested_toctree` — three-file toctree chain → H1/H2/H3 | |
 | `sample_multi_output` — two `.docx` files via `docx_documents` | |
+| `sample_directives` — topic / sidebar / contents / rubric / line + doctest blocks / version / todo / productionlist | |
 | | `md_admonitions` — MyST `:::{note}` / `:::{warning}` / all types |
 | | `md_mixed` — RST and MD source files in one project |
 | | `md_math` — LaTeX equations → OMML (inline, display, AMS environments) |
