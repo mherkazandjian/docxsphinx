@@ -7,6 +7,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Task-list glyph spacing with myst-parser ≥ 5.1.** myst-parser 5.1
+  no longer leaves a leading space in the text after a task item's
+  checkbox, so items rendered as `☒done thing`. The writer now always
+  emits the glyph followed by exactly one space and strips the text's
+  leading whitespace, giving `☒ done thing` with any myst-parser version.
+
+### Changed
+
+- **ruff pinned to 0.17.x** in the `dev` extras (`ruff>=0.17,<0.18`), so
+  CI and the Docker dev image run the same linter. ruff 0.17 flags rules
+  0.15 didn't; the code is updated to pass it (redundant `pass`
+  statements and unused `noqa` comments removed, `__all__` sorted,
+  `DocxWriter.settings_defaults` annotated as `ClassVar`).
+
 ## [2.1.0] — 2026-04-23
 
 Adds a reverse pipeline (`.docx` → Markdown / RST), LaTeX math

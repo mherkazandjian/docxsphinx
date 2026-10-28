@@ -11,6 +11,7 @@ import re
 import sys
 import zipfile
 from pathlib import Path
+from typing import ClassVar
 
 from docutils import nodes, writers
 from docx import Document
@@ -42,13 +43,14 @@ BALLOT_BOX_WITH_X = '☒'    # ☒ checked
 
 
 def _checkbox_prefix(list_item: nodes.Element) -> str:
-    """Return ``☒`` or ``☐`` for a MyST ``task-list-item`` list_item node.
+    """Return ``'☒ '`` or ``'☐ '`` for a MyST ``task-list-item`` list_item node.
 
     MyST emits the checkbox as a raw-HTML ``<input>`` element inside the
     item's first paragraph; the presence of ``checked`` in that raw text
-    determines the glyph. No trailing space is returned — MyST already
-    leaves a leading space in the text node that follows the raw element,
-    which provides natural separation.
+    determines the glyph. The trailing space is ours: myst-parser < 5.1
+    left a leading space in the text node after the raw element, 5.1+
+    doesn't, so ``add_text`` strips that text's leading whitespace and
+    the separator is always exactly one space.
     """
     checked = False
     for raw in list_item.findall(nodes.raw):
@@ -57,7 +59,7 @@ def _checkbox_prefix(list_item: nodes.Element) -> str:
         if 'checked' in raw.astext():
             checked = True
         break
-    return BALLOT_BOX_WITH_X if checked else BALLOT_BOX
+    return (BALLOT_BOX_WITH_X if checked else BALLOT_BOX) + ' '
 
 
 def dprint(_func: str | None = None, **kw: object) -> None:
@@ -283,7 +285,7 @@ class DocxWriter(writers.Writer):
 
     supported = ('docx',)
     settings_spec = ('No options here.', '', ())
-    settings_defaults: dict = {}
+    settings_defaults: ClassVar[dict] = {}
 
     output = None
 
@@ -479,7 +481,7 @@ class DocxTranslator(nodes.NodeVisitor):
     def add_text(self, text):
         dprint()
         if self._pending_text_prefix is not None:
-            text = self._pending_text_prefix + text
+            text = self._pending_text_prefix + text.lstrip()
             self._pending_text_prefix = None
         textrun = self.current_paragraph.add_run(text)
         if self.strong:
@@ -557,19 +559,15 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_compound(self, node):
         dprint()
-        pass
 
     def depart_compound(self, node):
         dprint()
-        pass
 
     def visit_glossary(self, node):
         dprint()
-        pass
 
     def depart_glossary(self, node):
         dprint()
-        pass
 
     def visit_title(self, node):
         dprint()
@@ -595,11 +593,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_subtitle(self, node):
         dprint()
-        pass
 
     def depart_subtitle(self, node):
         dprint()
-        pass
 
     def visit_attribution(self, node):
         dprint()
@@ -608,7 +604,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_attribution(self, node):
         dprint()
-        pass
 
     # -- autodoc / py-domain descriptions --------------------------------
     # Sphinx's `sphinx.ext.autodoc` and domain directives (`.. py:function::`
@@ -953,22 +948,18 @@ class DocxTranslator(nodes.NodeVisitor):
     def depart_tgroup(self, node):
         dprint()
         self.current_state.ncolumns = 1
-        pass
 
     def visit_thead(self, node):
         dprint()
-        pass
 
     def depart_thead(self, node):
         dprint()
-        pass
 
     def visit_tbody(self, node):
         dprint()
 
     def depart_tbody(self, node):
         dprint()
-        pass
 
     def visit_row(self, node):
         dprint()
@@ -978,7 +969,6 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_row(self, node):
         dprint()
-        pass
 
     def visit_entry(self, node):
         dprint()
@@ -1135,7 +1125,7 @@ class DocxTranslator(nodes.NodeVisitor):
         alt = node.get('alt')
         if alt:
             try:
-                doc_pr = shape._inline.docPr  # noqa: SLF001
+                doc_pr = shape._inline.docPr
                 doc_pr.set('descr', alt)
                 doc_pr.set('title', alt)
             except AttributeError:
@@ -1315,27 +1305,21 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_centered(self, node):
         dprint()
-        pass
 
     def depart_centered(self, node):
         dprint()
-        pass
 
     def visit_hlist(self, node):
         dprint()
-        pass
 
     def depart_hlist(self, node):
         dprint()
-        pass
 
     def visit_hlistcol(self, node):
         dprint()
-        pass
 
     def depart_hlistcol(self, node):
         dprint()
-        pass
 
     def _visit_admonition(self, node):
         """Render a note/warning/tip/etc. as a 1×1 table containing a bold
@@ -1453,11 +1437,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_line(self, node):
         dprint()
-        pass
 
     def depart_line(self, node):
         dprint()
-        pass
 
     def visit_block_quote(self, node):
         dprint()
@@ -1516,11 +1498,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_pending_xref(self, node):
         dprint()
-        pass
 
     def depart_pending_xref(self, node):
         dprint()
-        pass
 
     def visit_reference(self, node):
         """References render as clickable ``w:hyperlink`` runs.
@@ -1568,11 +1548,9 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def visit_download_reference(self, node):
         dprint()
-        pass
 
     def depart_download_reference(self, node):
         dprint()
-        pass
 
     def visit_emphasis(self, node):
         dprint()
@@ -1683,23 +1661,18 @@ class DocxTranslator(nodes.NodeVisitor):
 
     def depart_Text(self, node):
         dprint()
-        pass
 
     def visit_generated(self, node):
         dprint()
-        pass
 
     def depart_generated(self, node):
         dprint()
-        pass
 
     def visit_inline(self, node):
         dprint()
-        pass
 
     def depart_inline(self, node):
         dprint()
-        pass
 
     def visit_problematic(self, node):
         dprint()
