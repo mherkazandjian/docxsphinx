@@ -73,13 +73,13 @@ except ImportError:  # pragma: no cover - defensive
 try:
     from docx.table import _Cell  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover - defensive
-    class _Cell:  # noqa: N801  (preserve upstream name)
+    class _Cell:
         """Fallback stub; isinstance(obj, _Cell) is always False."""
 
 
 __all__ = [
-    "__",
     "_Cell",
+    "__",
     "bold",
     "brown",
     "darkgreen",
