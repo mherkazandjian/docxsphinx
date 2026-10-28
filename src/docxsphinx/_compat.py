@@ -73,13 +73,36 @@ except ImportError:  # pragma: no cover - defensive
 try:
     from docx.table import _Cell  # type: ignore[attr-defined]
 except ImportError:  # pragma: no cover - defensive
-    class _Cell:  # noqa: N801  (preserve upstream name)
+    class _Cell:
         """Fallback stub; isinstance(obj, _Cell) is always False."""
 
 
+# ---------------------------------------------------------------------------
+# python-docx image-parsing exceptions. ``run.add_picture`` raises these
+# (plain ``Exception`` subclasses, not OSError / ValueError) for formats it
+# can't read — SVG, WebP, truncated files. Catching them keeps one bad image
+# from aborting the whole build. If the module moves, fall back to an empty
+# tuple so ``except DOCX_IMAGE_ERRORS`` simply matches nothing.
+# ---------------------------------------------------------------------------
+try:
+    from docx.image.exceptions import (
+        InvalidImageStreamError,
+        UnexpectedEndOfFileError,
+        UnrecognizedImageError,
+    )
+    DOCX_IMAGE_ERRORS: tuple[type[Exception], ...] = (
+        InvalidImageStreamError,
+        UnexpectedEndOfFileError,
+        UnrecognizedImageError,
+    )
+except ImportError:  # pragma: no cover - defensive
+    DOCX_IMAGE_ERRORS = ()
+
+
 __all__ = [
-    "__",
+    "DOCX_IMAGE_ERRORS",
     "_Cell",
+    "__",
     "bold",
     "brown",
     "darkgreen",

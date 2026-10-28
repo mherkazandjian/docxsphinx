@@ -1,6 +1,6 @@
 ---
 name: docxsphinx-user
-description: Use when a Sphinx project should produce Microsoft Word (.docx) output with the docxsphinx extension, or when converting existing .docx files to Markdown or reStructuredText with docx2md / docx2rst. Covers installing, conf.py setup for reStructuredText and Markdown (MyST), docx_template / docx_documents / docx_debug_log, Word style templates and per-table styles, equations (need pandoc), which directives render and which are silently dropped, and troubleshooting missing styles, missing content, images and build errors. Not for changing docxsphinx's own source — use docxsphinx-developer for that.
+description: Use when a Sphinx project should produce Microsoft Word (.docx) output with the docxsphinx extension, or when converting existing .docx files to Markdown or reStructuredText with docx2md / docx2rst. Covers installing, conf.py setup for reStructuredText and Markdown (MyST), docx_template / docx_documents / docx_debug_log, Word style templates and per-table styles, equations (need pandoc), which directives render and how, the docx.unknown_node / docx.image warnings, and troubleshooting missing styles, missing content, images and build errors. Not for changing docxsphinx's own source — use docxsphinx-developer for that.
 ---
 
 # Using docxsphinx
@@ -129,15 +129,18 @@ and admonitions out of tables, and those always use the template's default table
 The full matrix is in [references/feature-support.md](references/feature-support.md). Read it
 before promising that a directive will show up in Word. These are the gaps people hit most:
 
-- **Silently dropped, including their content, with no warning:** `.. contents::`,
-  `.. topic::`, `.. sidebar::`, `.. container::`, `.. rubric::`, line blocks (`| …`), bare
-  doctest blocks (`>>> …` without `::`), `versionadded` / `versionchanged` / `deprecated`,
-  `.. todo::`, figure legends, block-quote attributions. The same happens to **any node type
-  from another extension** that docxsphinx has no handler for.
+- **Node types from other extensions** that docxsphinx has no renderer for keep their text,
+  unformatted, and log one `docx.unknown_node` warning per node type. Under `-W` that fails
+  the build: replace the construct, or add `suppress_warnings = ['docx.unknown_node']`.
 - **Inline code** (``` ``x`` ``` / `` `x` ``) comes out as plain text, not monospace.
-- **Images:** an SVG, or any format other than PNG / JPEG / GIF / BMP / TIFF, **aborts the
-  build**, so convert it first. Remote `http(s)` images are skipped with a warning. `:scale:`
-  and `%` widths are ignored with a warning; use px, cm, mm, in or pt.
+- **Images:** an SVG, or any format other than PNG / JPEG / GIF / BMP / TIFF, is skipped with a
+  `docx.image` warning, so convert it first. Remote `http(s)` images are skipped with a
+  warning. `:scale:` and `%` widths are ignored with a warning; use px, cm, mm, in or pt.
+- **On 2.1.0** (the PyPI release before these fixes), topic / sidebar / contents / container /
+  rubric / line blocks / bare doctest blocks / version directives / todo / figure legends /
+  attributions were **dropped silently with their content**, unknown node types vanished
+  without a warning, and an SVG **aborted the build**. Check `pip show docxsphinx` before
+  relying on them.
 - **Equations** need `pandoc` on `PATH` when you build. Without it, the raw LaTeX is printed in
   Consolas and a `math rendered as plain LaTeX` warning is logged.
 - **Figure numbers** are Word `SEQ` fields with a placeholder value. In Word, press Ctrl+A then
@@ -182,8 +185,9 @@ with `-b docx`. What doesn't round-trip:
 |---|---|
 | `Builder name docx not registered or available through entry point` | docxsphinx is not installed in the Python that runs `sphinx-build`. Install it there and list it in `extensions`. |
 | `style "Grid Table 4" is missing` / `"Preformatted Text" is missing` | No template, or the template never used that style. Add a template, or use `DocxTableStyle`. |
-| Text from a directive is missing in Word | It's on the dropped list above. To see which node holds it, run `sphinx-build -b pseudoxml source build/pseudo`, open the page's `.pseudoxml` file and look up the enclosing node (`<container>`, `<line_block>`, `<versionmodified>`, …) in the feature matrix. Rewrite with a supported construct, e.g. `.. note::` instead of `versionadded`, a heading instead of `rubric`, `.. code-block:: pycon` instead of a bare `>>>` block. |
-| Build aborts while writing, on an image | The image is SVG or another unsupported format. Convert it to PNG. |
+| `WARNING: docxsphinx has no renderer for 'x' nodes; including their text without formatting [docx.unknown_node]` | A directive (usually from another extension) produced a node type docxsphinx doesn't know. Its text is in the document, without that directive's look. Accept it, rewrite with a supported construct, or silence it with `suppress_warnings`. |
+| Text from a directive is missing in Word | On 2.1.0, it's on the dropped list in the feature matrix. To see which node holds it, run `sphinx-build -b pseudoxml source build/pseudo`, open the page's `.pseudoxml` file and look up the enclosing node (`<container>`, `<line_block>`, `<versionmodified>`, …). Upgrade, or rewrite with a construct 2.1.0 renders, e.g. `.. note::` instead of `versionadded`, a heading instead of `rubric`, `.. code-block:: pycon` instead of a bare `>>>` block. |
+| `image … skipped: python-docx cannot embed SVG … [docx.image]` (or, on 2.1.0, the build aborts on an image) | The image is SVG or another format python-docx can't embed. Convert it to PNG. |
 | Image missing, with `failed to embed image` | Wrong path, or a remote URL. Image paths are relative to the document, and the file must be local. |
 | Equations show up as LaTeX source | pandoc is missing on the build machine (in CI too). |
 | `docx_template … not found; searched …` | The path is relative to `templates_path` entries or the source dir, not to where you run the build. |

@@ -1,0 +1,71 @@
+# docxsphinx fingerprint for sample_directives_project-0.1.docx
+# format-version: 1
+
+paragraphs        33
+tables            4
+inline_shapes     1
+hyperlinks        4
+bookmarks         7
+footnotes         0
+
+# heading texts (in document order)
+  Heading1      Formerly dropped constructs
+  Heading2      Docutils blocks
+  Heading2      Sphinx directives
+
+# paragraph styles (sorted)
+  Caption                       2
+  Heading1                      1
+  Heading2                      2
+  ListBullet                    4
+
+# run styles (sorted)
+  (none)
+
+# table shapes (document order)
+  1x1  On this pageDocutils blocksSphinx direct
+  1x1  Topic titletopicMARK body text.
+  1x1  Sidebar titleSidebar subtitlesidebarMARK
+  1x1  TodotodoMARK item.
+
+# hyperlinks (sorted)
+  anchor    code-sample                                         codecaptionMARK
+  anchor    docutils-blocks                                     Docutils blocks
+  anchor    grammar-token-expr                                  expr
+  anchor    sphinx-directives                                   Sphinx directives
+
+# bookmark names (sorted)
+  code-sample
+  docutils-blocks
+  formerly-dropped-constructs
+  grammar-token-expr
+  grammar-token-stmt
+  id2
+  sphinx-directives
+
+# element tag census (top 25 — excluding noisy infra tags)
+  w:r                           73
+  w:t                           66
+  w:p                           33
+  w:rPr                         30
+  w:pPr                         14
+  w:pStyle                      9
+  w:b                           8
+  w:br                          8
+  w:bookmarkStart               7
+  w:jc                          5
+  w:tbl                         4
+  w:tblPr                       4
+  w:tblW                        4
+  w:tblLook                     4
+  w:tblGrid                     4
+  w:gridCol                     4
+  w:tr                          4
+  w:tc                          4
+  w:tcPr                        4
+  w:tcW                         4
+  w:hyperlink                   4
+  w:u                           4
+  w:ind                         3
+  w:document                    1
+  w:body                        1

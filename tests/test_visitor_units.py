@@ -108,8 +108,14 @@ def test_mixed_nesting_picks_style_by_innermost_list(
     assert any('List Bullet 2' in s for s in list_styles), list_styles
 
 
-def _build_tasklist_doctree(checked: bool, task_text: str) -> nodes.document:
-    """Hand-build the shape of doctree MyST emits for a single GFM task item."""
+def _build_tasklist_doctree(
+    checked: bool, task_text: str, leading_space: bool = True,
+) -> nodes.document:
+    """Hand-build the shape of doctree MyST emits for a single GFM task item.
+
+    ``leading_space`` mirrors the text node after the checkbox: myst-parser
+    < 5.1 starts it with a space, 5.1+ doesn't.
+    """
     doctree = _blank_document()
     blist = nodes.bullet_list(bullet='-', classes=['contains-task-list'])
     item = nodes.list_item(classes=['task-list-item'])
@@ -122,7 +128,7 @@ def _build_tasklist_doctree(checked: bool, task_text: str) -> nodes.document:
              'disabled="disabled" type="checkbox">'
     )
     para += nodes.raw('', html, format='html')
-    para += nodes.Text(f' {task_text}')
+    para += nodes.Text(f' {task_text}' if leading_space else task_text)
     item += para
     blist += item
     doctree += blist
@@ -152,6 +158,22 @@ def test_tasklist_checked_renders_boxed_x(fake_builder: SimpleNamespace) -> None
     list_items = [p for p in doc.paragraphs if 'List' in (p.style.name or '')]
     assert list_items, [p.text for p in doc.paragraphs]
     assert list_items[0].text == '☒ make coffee', list_items[0].text
+
+
+@pytest.mark.parametrize('leading_space', [True, False], ids=['myst<5.1', 'myst>=5.1'])
+@pytest.mark.parametrize(('checked', 'glyph'), [(False, '☐'), (True, '☒')])
+def test_tasklist_glyph_followed_by_exactly_one_space(
+    fake_builder: SimpleNamespace, checked: bool, glyph: str, leading_space: bool,
+) -> None:
+    """The item reads "<glyph> <text>" whether or not MyST leaves a space
+    after the checkbox raw node."""
+    doctree = _build_tasklist_doctree(
+        checked=checked, task_text='ship it', leading_space=leading_space,
+    )
+    doc = _walk_doctree(doctree, fake_builder)
+    list_items = [p for p in doc.paragraphs if 'List' in (p.style.name or '')]
+    assert list_items, [p.text for p in doc.paragraphs]
+    assert list_items[0].text == f'{glyph} ship it', list_items[0].text
 
 
 def test_tasklist_prefix_does_not_leak_to_following_plain_item(
@@ -308,7 +330,7 @@ def test_image_with_width_sets_inline_shape_width(
     ), [(p.text, p.alignment) for p in picture_paragraphs]
 
     # Alt text propagates to the wp:docPr element.
-    doc_pr = shape._inline.docPr  # noqa: SLF001
+    doc_pr = shape._inline.docPr
     assert doc_pr.get('descr') == 'sample alt'
     assert doc_pr.get('title') == 'sample alt'
 
@@ -1565,3 +1587,238 @@ def test_template_path_templates_path_takes_precedence(tmp_path: Path) -> None:
     )
     writer = DocxWriter(builder)
     assert writer.template_path == in_templates
+
+
+# ---------------------------------------------------------------------------
+# Unknown nodes, unsupported images, and constructs that used to be dropped
+# ---------------------------------------------------------------------------
+
+class _mystery(nodes.General, nodes.Element):
+    """A block container no visitor knows — stands in for an extension node."""
+
+
+class _mystery_text(nodes.General, nodes.TextElement):
+    """A block-level text element no visitor knows (rubric-like)."""
+
+
+def _paragraph(text: str) -> nodes.paragraph:
+    para = nodes.paragraph()
+    para += nodes.Text(text)
+    return para
+
+
+def test_unknown_node_warns_once_and_keeps_its_text(fake_builder: SimpleNamespace) -> None:
+    """An unknown node type warns once per type (Sphinx logger, docx.unknown_node)
+    and its children still render instead of vanishing."""
+    from unittest.mock import patch
+
+    doctree = _blank_document()
+    for word in ('firstMARK', 'secondMARK'):
+        box = _mystery()
+        box += _paragraph(word)
+        doctree += box
+
+    with patch('docxsphinx.writer.sphinx_logger') as sphinx_logger:
+        doc = _walk_doctree(doctree, fake_builder)
+
+    texts = [p.text for p in doc.paragraphs]
+    assert 'firstMARK' in texts and 'secondMARK' in texts, texts
+    assert sphinx_logger.warning.call_count == 1
+    _, kwargs = sphinx_logger.warning.call_args
+    assert kwargs['type'] == 'docx'
+    assert kwargs['subtype'] == 'unknown_node'
+    assert '_mystery' in sphinx_logger.warning.call_args.args
+
+
+def test_unknown_node_warning_is_once_per_build_not_per_output(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """With docx_documents each output gets a fresh translator; the
+    warned-about set lives on the builder, so a second output stays quiet."""
+    from unittest.mock import patch
+
+    def tree():
+        doctree = _blank_document()
+        box = _mystery()
+        box += _paragraph('text')
+        doctree += box
+        return doctree
+
+    with patch('docxsphinx.writer.sphinx_logger') as sphinx_logger:
+        _walk_doctree(tree(), fake_builder)
+        _walk_doctree(tree(), fake_builder)
+    assert sphinx_logger.warning.call_count == 1
+
+
+def test_unknown_block_text_element_gets_its_own_paragraph(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """Text directly inside an unknown block-level element must not run on
+    into the preceding paragraph."""
+    from unittest.mock import patch
+
+    doctree = _blank_document()
+    doctree += _paragraph('before')
+    odd = _mystery_text()
+    odd += nodes.Text('oddMARK')
+    doctree += odd
+
+    with patch('docxsphinx.writer.sphinx_logger'):
+        doc = _walk_doctree(doctree, fake_builder)
+    assert [p.text for p in doc.paragraphs] == ['before', 'oddMARK']
+
+
+def test_svg_image_warns_and_build_continues(
+    fake_builder: SimpleNamespace, tmp_path: Path,
+) -> None:
+    """python-docx raises UnrecognizedImageError (not OSError/ValueError) for
+    SVG. That used to abort the build; now the image is skipped with an
+    actionable docx.image warning and the rest of the document renders."""
+    from unittest.mock import patch
+
+    (tmp_path / 'pic.svg').write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'
+    )
+    fake_builder.env.srcdir = str(tmp_path)
+    doctree = _blank_document()
+    doctree += nodes.image(uri='pic.svg')
+    doctree += _paragraph('afterMARK')
+
+    with patch('docxsphinx.writer.sphinx_logger') as sphinx_logger:
+        doc = _walk_doctree(doctree, fake_builder)
+
+    assert 'afterMARK' in [p.text for p in doc.paragraphs]
+    assert len(doc.inline_shapes) == 0
+    sphinx_logger.warning.assert_called_once()
+    args, kwargs = sphinx_logger.warning.call_args
+    assert kwargs['subtype'] == 'image'
+    assert any('SVG' in str(a) for a in args), args
+
+
+def test_literal_strong_renders_bold(fake_builder: SimpleNamespace) -> None:
+    """autodoc's ``:param x:`` puts the name in a ``literal_strong``; it used
+    to hit unknown_visit and vanish."""
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    para = nodes.paragraph()
+    para += addnodes.literal_strong('', 'xMARK')
+    para += nodes.Text(' – the x value')
+    doctree += para
+
+    doc = _walk_doctree(doctree, fake_builder)
+    assert doc.paragraphs[0].text == 'xMARK – the x value'
+    bold = [r.text for r in doc.paragraphs[0].runs if r.bold]
+    assert bold == ['xMARK'], bold
+
+
+def test_productionlist_renders_lines_and_token_bookmarks(
+    fake_builder: SimpleNamespace,
+) -> None:
+    from docx.oxml.ns import qn
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    plist = addnodes.productionlist()
+    for name, rule in (('stmt', 'expr ";"'), ('expr', '"x" | "y"')):
+        prod = addnodes.production(tokenname=name)
+        prod += addnodes.literal_strong('', name, ids=[f'grammar-token-{name}'])
+        prod += nodes.Text(f' ::= {rule}\n')
+        plist += prod
+    doctree += plist
+
+    doc = _walk_doctree(doctree, fake_builder)
+    para = doc.paragraphs[0]
+    assert para.text == 'stmt ::= expr ";"\nexpr ::= "x" | "y"', repr(para.text)
+    assert {r.font.name for r in para.runs if r.text.strip()} == {'Consolas'}
+    names = {b.get(qn('w:name')) for b in para._p.iter(qn('w:bookmarkStart'))}
+    assert names == {'grammar-token-stmt', 'grammar-token-expr'}
+
+
+def test_versionmodified_keeps_label_and_body(fake_builder: SimpleNamespace) -> None:
+    """Sphinx puts the "Added in version X:" label in the body paragraph as an
+    inline; the writer just has to stop skipping the node."""
+    from sphinx import addnodes
+
+    doctree = _blank_document()
+    vm = addnodes.versionmodified(type='versionadded', version='1.2')
+    para = nodes.paragraph()
+    para += nodes.inline('', 'Added in version 1.2: ', classes=['versionmodified', 'added'])
+    para += nodes.Text('bodyMARK')
+    vm += para
+    doctree += vm
+
+    doc = _walk_doctree(doctree, fake_builder)
+    assert [p.text for p in doc.paragraphs] == ['Added in version 1.2: bodyMARK']
+
+
+def _titled_box(kind: str) -> nodes.Element:
+    if kind == 'todo_node':
+        from sphinx.ext.todo import todo_node
+        return todo_node()
+    return getattr(nodes, kind)()
+
+
+@pytest.mark.parametrize('kind', ['topic', 'sidebar', 'todo_node'])
+def test_titled_boxes_render_like_admonitions(
+    fake_builder: SimpleNamespace, kind: str,
+) -> None:
+    """topic / sidebar / todo_node → 1×1 table: bold title from the title
+    child (not a Word heading), body below."""
+    doctree = _blank_document()
+    box = _titled_box(kind)
+    title = nodes.title()
+    title += nodes.Text('Box title')
+    box += title
+    box += _paragraph('boxMARK body')
+    doctree += box
+
+    doc = _walk_doctree(doctree, fake_builder)
+    assert len(doc.tables) == 1
+    cell = doc.tables[0].rows[0].cells[0]
+    assert [p.text for p in cell.paragraphs] == ['Box title', 'boxMARK body']
+    assert cell.paragraphs[0].runs[0].bold
+    # The title must not also leak out as a heading paragraph.
+    assert not [p for p in doc.paragraphs if p.style.name.startswith('Heading')]
+
+
+def test_sidebar_subtitle_is_italic_line_under_title(fake_builder: SimpleNamespace) -> None:
+    doctree = _blank_document()
+    box = nodes.sidebar()
+    title = nodes.title()
+    title += nodes.Text('Side')
+    subtitle = nodes.subtitle()
+    subtitle += nodes.Text('Sub')
+    box += title
+    box += subtitle
+    box += _paragraph('body')
+    doctree += box
+
+    doc = _walk_doctree(doctree, fake_builder)
+    cell = doc.tables[0].rows[0].cells[0]
+    assert [p.text for p in cell.paragraphs] == ['Side', 'Sub', 'body']
+    assert cell.paragraphs[1].runs[0].italic
+
+
+def test_captioned_code_block_container_gets_plain_caption(
+    fake_builder: SimpleNamespace,
+) -> None:
+    """``code-block`` with ``:caption:`` is wrapped in a container; the caption
+    must not become "Figure N." and the container id gets a bookmark."""
+    from docx.oxml.ns import qn
+
+    doctree = _blank_document()
+    wrapper = nodes.container(classes=['literal-block-wrapper'], ids=['code-x'], literal_block=True)
+    caption = nodes.caption()
+    caption += nodes.Text('captionMARK')
+    wrapper += caption
+    wrapper += nodes.literal_block('print(1)', 'print(1)', language='python')
+    doctree += wrapper
+
+    doc = _walk_doctree(doctree, fake_builder)
+    texts = [p.text for p in doc.paragraphs]
+    assert texts[0] == 'captionMARK', texts
+    assert 'print(1)' in texts[1], texts
+    assert 'SEQ Figure' not in doc.element.xml
+    names = {b.get(qn('w:name')) for b in doc.paragraphs[0]._p.iter(qn('w:bookmarkStart'))}
+    assert names == {'code-x'}

@@ -143,7 +143,8 @@ away.
 - `Document.add_picture()` always starts a new paragraph at the document root. Inside a cell or
   a running paragraph, call `run.add_picture()` on a run at the current location.
 - `run.add_picture()` raises `docx.image.exceptions.UnrecognizedImageError`, a plain `Exception`,
-  for SVG / WebP. It does not raise `OSError` or `ValueError`.
+  for SVG / WebP. It does not raise `OSError` or `ValueError`. `visit_image` catches it through
+  `docxsphinx._compat.DOCX_IMAGE_ERRORS`.
 - `add_table(..., style=…)` only takes effect for tables at the document root. Nested tables
   get no style.
 - `docx.table._Cell` is private but the only handle for `isinstance` checks. Import it through

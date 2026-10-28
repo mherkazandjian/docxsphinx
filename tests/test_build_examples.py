@@ -44,6 +44,7 @@ EXAMPLES: list[tuple[str, tuple[str, ...]]] = [
     ('sample_autodoc', ('sample_autodoc_project-0.1.docx',)),
     ('sample_nested_toctree', ('sample_nested_toctree_project-0.1.docx',)),
     ('sample_multi_output', ('ReportA.docx', 'ReportB.docx')),
+    ('sample_directives', ('sample_directives_project-0.1.docx',)),
 ]
 
 

@@ -34,15 +34,15 @@ footnotes         0
   sample-autodoc-sphinx-autodoc-rendered-to-word
 
 # element tag census (top 25 — excluding noisy infra tags)
-  w:r                           117
-  w:t                           117
+  w:r                           123
+  w:t                           123
   w:p                           32
-  w:rPr                         17
+  w:rPr                         23
+  w:b                           18
   w:tc                          16
   w:tcPr                        16
   w:tcW                         16
   w:pPr                         12
-  w:b                           12
   w:tr                          8
   w:pStyle                      6
   w:gridCol                     6
