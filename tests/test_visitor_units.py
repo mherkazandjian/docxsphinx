@@ -1593,11 +1593,11 @@ def test_template_path_templates_path_takes_precedence(tmp_path: Path) -> None:
 # Unknown nodes, unsupported images, and constructs that used to be dropped
 # ---------------------------------------------------------------------------
 
-class _mystery(nodes.General, nodes.Element):  # noqa: N801  (docutils node naming)
+class _mystery(nodes.General, nodes.Element):
     """A block container no visitor knows — stands in for an extension node."""
 
 
-class _mystery_text(nodes.General, nodes.TextElement):  # noqa: N801
+class _mystery_text(nodes.General, nodes.TextElement):
     """A block-level text element no visitor knows (rubric-like)."""
 
 
